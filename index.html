@@ -3,15 +3,452 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Jarvis Wake-Up Intro</title>
-    <link rel="stylesheet" href="styles.css" />
+    <title>Nano Awakening Intro</title>
+    <style>
+      :root {
+        --bg0: #02030a;
+        --bg1: #060b1a;
+        --fg: #dbf4ff;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html,
+      body {
+        width: 100%;
+        height: 100%;
+        margin: 0;
+        overflow: hidden;
+        background: radial-gradient(circle at 50% 85%, var(--bg1) 0%, var(--bg0) 58%, #000 100%);
+        color: var(--fg);
+        font-family: Inter, "Segoe UI", system-ui, sans-serif;
+      }
+
+      #scene {
+        width: 100%;
+        height: 100%;
+        display: block;
+        filter: saturate(130%) contrast(112%);
+      }
+
+      .overlay {
+        position: fixed;
+        inset: 0;
+        display: grid;
+        place-items: end center;
+        pointer-events: none;
+        padding: 2.4rem;
+      }
+
+      #status {
+        opacity: 0;
+        letter-spacing: 0.48rem;
+        font-size: clamp(0.92rem, 2.2vw, 1.75rem);
+        text-transform: uppercase;
+        text-shadow: 0 0 24px rgba(130, 244, 255, 0.86), 0 0 70px rgba(178, 105, 255, 0.42);
+        transition: opacity 360ms ease;
+      }
+
+      #status.show {
+        opacity: 1;
+      }
+
+      #startBtn {
+        position: fixed;
+        top: 1.05rem;
+        right: 1.05rem;
+        pointer-events: auto;
+        border: 1px solid rgba(132, 240, 255, 0.56);
+        color: #def8ff;
+        background: rgba(2, 9, 20, 0.78);
+        border-radius: 999px;
+        padding: 0.7rem 1rem;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        font-size: 0.72rem;
+        cursor: pointer;
+        box-shadow: 0 0 28px rgba(58, 120, 255, 0.2);
+        backdrop-filter: blur(7px);
+      }
+
+      #startBtn.hidden {
+        opacity: 0;
+        pointer-events: none;
+      }
+    </style>
   </head>
   <body>
     <canvas id="scene" aria-hidden="true"></canvas>
     <div class="overlay">
-      <div id="status" class="status" aria-live="polite"></div>
-      <button id="startBtn" class="start-btn">Initialize Sequence</button>
+      <div id="status" aria-live="polite"></div>
+      <button id="startBtn">Initialize Sequence</button>
     </div>
-    <script src="script.js"></script>
+
+    <script>
+      const canvas = document.getElementById("scene");
+      const ctx = canvas.getContext("2d");
+      const statusEl = document.getElementById("status");
+      const startBtn = document.getElementById("startBtn");
+
+      const DURATION = 5.8;
+      const STAR_COUNT = 1600;
+      const DUST_COUNT = 700;
+      const FILAMENTS = 54;
+
+      let width = 0;
+      let height = 0;
+      let raf = null;
+      let startTime = 0;
+      let running = false;
+
+      const stars = Array.from({ length: STAR_COUNT }, () => ({
+        x: Math.random() * 2 - 1,
+        y: Math.random() * 2 - 1,
+        z: Math.random(),
+        tw: Math.random() * Math.PI * 2,
+        seed: Math.random(),
+      }));
+
+      const dust = Array.from({ length: DUST_COUNT }, () => ({
+        x: Math.random() * 2 - 1,
+        y: Math.random() * 2 - 1,
+        z: Math.random(),
+        r: Math.random() * 1.6 + 0.2,
+        p: Math.random() * Math.PI * 2,
+      }));
+
+      const filaments = Array.from({ length: FILAMENTS }, (_, i) => ({
+        ring: i % 3,
+        phase: Math.random() * Math.PI * 2,
+        offset: Math.random() * Math.PI * 2,
+      }));
+
+      function clamp01(v) {
+        return Math.max(0, Math.min(1, v));
+      }
+
+      function smoothstep(a, b, x) {
+        const t = clamp01((x - a) / (b - a));
+        return t * t * (3 - 2 * t);
+      }
+
+      function easeOutExpo(x) {
+        return x >= 1 ? 1 : 1 - 2 ** (-10 * x);
+      }
+
+      function resize() {
+        const dpr = Math.min(window.devicePixelRatio || 1, 2);
+        width = canvas.width = Math.floor(window.innerWidth * dpr);
+        height = canvas.height = Math.floor(window.innerHeight * dpr);
+        canvas.style.width = `${window.innerWidth}px`;
+        canvas.style.height = `${window.innerHeight}px`;
+      }
+
+      function project(p, t, tunnelPull, camX, camY) {
+        const z = Math.max(0.045, p.z * (1 - tunnelPull * 0.32));
+        const depth = 2.1 / z;
+        const swirl = 0.048 * (0.3 + tunnelPull) * Math.sin(t * 0.55 + p.seed * 9 + z * 7);
+        return {
+          x: width * (0.5 + (p.x + swirl + camX * z) * depth * 0.33),
+          y: height * (0.5 + (p.y - swirl * 0.6 + camY * z) * depth * 0.33),
+          depth,
+          z,
+        };
+      }
+
+      function drawBackground(t) {
+        const dawn = smoothstep(0.6, 3.5, t);
+        const asc = smoothstep(3.2, 5.4, t);
+        const shift = 0.5 + Math.sin(t * 0.24) * 0.12;
+
+        const g = ctx.createRadialGradient(
+          width * 0.5,
+          height * (0.58 - asc * 0.06),
+          width * (0.08 + 0.05 * dawn),
+          width * (0.5 + 0.05 * Math.sin(t * 0.2)),
+          height * 0.56,
+          width * 0.86
+        );
+        g.addColorStop(0, `hsla(${235 + 60 * shift}, 88%, ${12 + dawn * 18}%, ${0.95 - asc * 0.08})`);
+        g.addColorStop(0.42, `hsla(${250 + 40 * shift}, 78%, ${8 + dawn * 11}%, 0.88)`);
+        g.addColorStop(1, "rgba(0,0,0,0.98)");
+        ctx.fillStyle = g;
+        ctx.fillRect(0, 0, width, height);
+
+        const veil = smoothstep(0.5, 2.6, t) * (1 - smoothstep(5.05, 5.8, t));
+        if (veil > 0) {
+          const fog = ctx.createLinearGradient(0, 0, 0, height);
+          fog.addColorStop(0, `rgba(50, 96, 210, ${0.04 * veil})`);
+          fog.addColorStop(0.5, `rgba(132, 68, 255, ${0.12 * veil})`);
+          fog.addColorStop(1, `rgba(0, 0, 0, ${0.03 * veil})`);
+          ctx.fillStyle = fog;
+          ctx.fillRect(0, 0, width, height);
+        }
+      }
+
+      function drawStarField(t, camX, camY) {
+        const wake = smoothstep(0.35, 2.2, t);
+        const tunnel = smoothstep(1.4, 4.8, t);
+
+        for (const p of stars) {
+          const q = project(p, t, tunnel, camX, camY);
+          if (q.x < -20 || q.x > width + 20 || q.y < -20 || q.y > height + 20) continue;
+
+          const tw = 0.45 + 0.55 * Math.sin(t * 2.7 + p.tw + p.z * 4);
+          const size = (0.4 + (1 - p.z) * 2.2) * (0.5 + tunnel * 0.7) * q.depth * 0.55;
+          const hue = 190 + 120 * (p.seed * 0.7 + 0.3 * Math.sin(t * 0.18 + p.seed * 5));
+          const a = (0.05 + wake * 0.43) * (0.35 + tw * 0.9) * (0.55 + (1 - p.z));
+
+          ctx.fillStyle = `hsla(${hue}, 100%, ${67 + tw * 18}%, ${a})`;
+          ctx.beginPath();
+          ctx.arc(q.x, q.y, size, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      }
+
+      function drawDust(t, camX, camY) {
+        const emerge = smoothstep(0.2, 1.7, t);
+        const surge = smoothstep(3.7, 5.4, t);
+
+        ctx.globalCompositeOperation = "lighter";
+        for (const p of dust) {
+          const driftX = Math.sin(t * 0.26 + p.p) * 0.06;
+          const driftY = Math.cos(t * 0.33 + p.p * 0.8) * 0.05;
+          const q = project({ ...p, x: p.x + driftX, y: p.y + driftY }, t, surge * 0.6, camX * 1.2, camY * 1.2);
+          if (q.x < -30 || q.x > width + 30 || q.y < -30 || q.y > height + 30) continue;
+
+          const halo = p.r * q.depth * (0.8 + surge * 0.8);
+          const alpha = (0.016 + emerge * 0.07 + surge * 0.04) * (1.15 - p.z);
+          const h = 175 + 130 * p.z;
+
+          ctx.fillStyle = `hsla(${h}, 95%, ${62 + p.z * 22}%, ${alpha})`;
+          ctx.beginPath();
+          ctx.arc(q.x, q.y, halo, 0, Math.PI * 2);
+          ctx.fill();
+        }
+        ctx.globalCompositeOperation = "source-over";
+      }
+
+      function drawFilamentStructures(t) {
+        const reveal = smoothstep(1.1, 3.4, t);
+        const alive = smoothstep(3.0, 5.1, t);
+        const cx = width * 0.5;
+        const cy = height * 0.5;
+
+        ctx.save();
+        ctx.translate(cx, cy);
+
+        for (const f of filaments) {
+          const ringBase = width * (0.08 + f.ring * 0.07);
+          const rot = t * (0.13 + f.ring * 0.05) + f.offset;
+          const points = 16 + f.ring * 6;
+          ctx.beginPath();
+
+          for (let i = 0; i <= points; i++) {
+            const a = (i / points) * Math.PI * 2;
+            const ripple = Math.sin(t * 1.8 + f.phase + i * 0.8) * 0.08;
+            const r = ringBase * (1 + ripple * (0.3 + alive));
+            const x = Math.cos(a + rot) * r;
+            const y = Math.sin(a * (1.14 + f.ring * 0.12) - rot * 0.8) * r * 0.62;
+            if (i === 0) ctx.moveTo(x, y);
+            else ctx.lineTo(x, y);
+          }
+
+          const alpha = 0.02 + reveal * 0.07 + alive * 0.1;
+          ctx.strokeStyle = `hsla(${210 + f.ring * 55}, 90%, ${58 + f.ring * 8}%, ${alpha})`;
+          ctx.lineWidth = 0.6 + f.ring * 0.35;
+          ctx.stroke();
+        }
+
+        ctx.restore();
+      }
+
+      function drawAwakeningCore(t) {
+        const form = smoothstep(2.2, 4.0, t);
+        const charge = smoothstep(3.7, 5.2, t);
+        const sync = smoothstep(5.05, 5.62, t);
+        const cx = width * 0.5;
+        const cy = height * 0.5;
+
+        const orbR = width * (0.02 + 0.022 * form + 0.012 * charge);
+        const pulse = 1 + 0.08 * Math.sin(t * 9.8);
+
+        const aura = ctx.createRadialGradient(cx, cy, 0, cx, cy, orbR * (10 + charge * 4));
+        aura.addColorStop(0, `rgba(170,252,255,${0.72 * form + 0.22 * charge})`);
+        aura.addColorStop(0.2, `rgba(128,186,255,${0.38 * form + 0.24 * charge})`);
+        aura.addColorStop(0.45, `rgba(193,90,255,${0.16 * form + 0.2 * charge})`);
+        aura.addColorStop(1, "rgba(0,0,0,0)");
+        ctx.fillStyle = aura;
+        ctx.beginPath();
+        ctx.arc(cx, cy, orbR * (10 + charge * 4), 0, Math.PI * 2);
+        ctx.fill();
+
+        for (let i = 0; i < 4; i++) {
+          const rr = width * (0.075 + i * 0.045) * (1 + charge * 0.12);
+          ctx.save();
+          ctx.translate(cx, cy);
+          ctx.rotate((i % 2 ? -1 : 1) * (t * (0.2 + i * 0.05)));
+          ctx.setLineDash([18 + i * 7, 12 + i * 3]);
+          ctx.strokeStyle = `rgba(${120 + i * 20}, ${190 - i * 14}, 255, ${0.07 + form * 0.16 + charge * 0.14})`;
+          ctx.lineWidth = 0.9 + i * 0.4;
+          ctx.beginPath();
+          ctx.ellipse(0, 0, rr, rr * (0.58 + i * 0.08), 0.25 * i, 0, Math.PI * 2);
+          ctx.stroke();
+          ctx.restore();
+        }
+        ctx.setLineDash([]);
+
+        ctx.fillStyle = `rgba(199,250,255,${0.75 * form + 0.18 * charge})`;
+        ctx.beginPath();
+        ctx.arc(cx, cy, orbR * pulse, 0, Math.PI * 2);
+        ctx.fill();
+
+        if (sync > 0) {
+          const flash = easeOutExpo(sync) * (1 - smoothstep(5.62, 5.8, t));
+          ctx.fillStyle = `rgba(180,240,255,${flash * 0.24})`;
+          ctx.fillRect(0, 0, width, height);
+        }
+      }
+
+      function drawVignetteAndStatus(t) {
+        const lock = smoothstep(5.0, 5.7, t);
+        if (lock > 0) {
+          statusEl.textContent = "CONSCIOUSNESS LINKED";
+          statusEl.style.opacity = String(lock);
+          statusEl.classList.toggle("show", lock > 0.12);
+        }
+
+        const v = ctx.createRadialGradient(width * 0.5, height * 0.5, width * 0.3, width * 0.5, height * 0.5, width * 0.75);
+        v.addColorStop(0, "rgba(0,0,0,0)");
+        v.addColorStop(1, "rgba(0,0,0,0.5)");
+        ctx.fillStyle = v;
+        ctx.fillRect(0, 0, width, height);
+      }
+
+      function render(now) {
+        const t = (now - startTime) / 1000;
+        if (t > DURATION) {
+          running = false;
+          cancelAnimationFrame(raf);
+          startBtn.classList.remove("hidden");
+          return;
+        }
+
+        const camX = Math.sin(t * 0.29) * 0.02;
+        const camY = Math.cos(t * 0.23) * 0.018;
+
+        ctx.clearRect(0, 0, width, height);
+        drawBackground(t);
+        drawStarField(t, camX, camY);
+        drawDust(t, camX, camY);
+        drawFilamentStructures(t);
+        drawAwakeningCore(t);
+        drawVignetteAndStatus(t);
+
+        raf = requestAnimationFrame(render);
+      }
+
+      function playAudio() {
+        const audio = new (window.AudioContext || window.webkitAudioContext)();
+        const master = audio.createGain();
+        master.gain.value = 0.2;
+        master.connect(audio.destination);
+
+        const mkNoise = () => {
+          const b = audio.createBuffer(1, audio.sampleRate * DURATION, audio.sampleRate);
+          const d = b.getChannelData(0);
+          let lp = 0;
+          for (let i = 0; i < d.length; i++) {
+            lp = lp * 0.985 + (Math.random() * 2 - 1) * 0.08;
+            d[i] = lp;
+          }
+          return b;
+        };
+
+        const bed = audio.createBufferSource();
+        bed.buffer = mkNoise();
+        const bedFilter = audio.createBiquadFilter();
+        bedFilter.type = "bandpass";
+        bedFilter.frequency.setValueAtTime(380, audio.currentTime);
+        bedFilter.frequency.exponentialRampToValueAtTime(2200, audio.currentTime + 5.2);
+        const bedGain = audio.createGain();
+        bedGain.gain.setValueAtTime(0.0001, audio.currentTime);
+        bedGain.gain.exponentialRampToValueAtTime(0.14, audio.currentTime + 1.2);
+        bedGain.gain.linearRampToValueAtTime(0.06, audio.currentTime + DURATION);
+        bed.connect(bedFilter).connect(bedGain).connect(master);
+
+        const sub = audio.createOscillator();
+        sub.type = "sine";
+        sub.frequency.setValueAtTime(41, audio.currentTime);
+        sub.frequency.linearRampToValueAtTime(63, audio.currentTime + 4.9);
+        const subGain = audio.createGain();
+        subGain.gain.setValueAtTime(0.0001, audio.currentTime);
+        subGain.gain.exponentialRampToValueAtTime(0.24, audio.currentTime + 1.4);
+        subGain.gain.linearRampToValueAtTime(0.16, audio.currentTime + DURATION);
+        sub.connect(subGain).connect(master);
+
+        const shimmer = audio.createOscillator();
+        shimmer.type = "triangle";
+        shimmer.frequency.setValueAtTime(140, audio.currentTime + 0.9);
+        shimmer.frequency.exponentialRampToValueAtTime(520, audio.currentTime + 5.0);
+        const shimmerGain = audio.createGain();
+        shimmerGain.gain.setValueAtTime(0.0001, audio.currentTime + 0.8);
+        shimmerGain.gain.exponentialRampToValueAtTime(0.09, audio.currentTime + 3.3);
+        shimmerGain.gain.linearRampToValueAtTime(0.04, audio.currentTime + DURATION);
+        shimmer.connect(shimmerGain).connect(master);
+
+        for (let i = 0; i < 12; i++) {
+          const click = audio.createOscillator();
+          click.type = "square";
+          click.frequency.setValueAtTime(500 + Math.random() * 2200, audio.currentTime);
+          const cg = audio.createGain();
+          const at = audio.currentTime + 1 + i * 0.31 + Math.random() * 0.05;
+          cg.gain.setValueAtTime(0.0001, at);
+          cg.gain.exponentialRampToValueAtTime(0.035, at + 0.01);
+          cg.gain.exponentialRampToValueAtTime(0.0001, at + 0.06);
+          click.connect(cg).connect(master);
+          click.start(at);
+          click.stop(at + 0.08);
+        }
+
+        const hit = audio.createOscillator();
+        hit.type = "sawtooth";
+        hit.frequency.setValueAtTime(320, audio.currentTime + 5.03);
+        hit.frequency.exponentialRampToValueAtTime(52, audio.currentTime + 5.48);
+        const hitGain = audio.createGain();
+        hitGain.gain.setValueAtTime(0.0001, audio.currentTime + 5.0);
+        hitGain.gain.exponentialRampToValueAtTime(0.42, audio.currentTime + 5.08);
+        hitGain.gain.exponentialRampToValueAtTime(0.0001, audio.currentTime + 5.64);
+        hit.connect(hitGain).connect(master);
+
+        bed.start();
+        sub.start();
+        shimmer.start(audio.currentTime + 0.8);
+        hit.start(audio.currentTime + 5.0);
+
+        bed.stop(audio.currentTime + DURATION + 0.1);
+        sub.stop(audio.currentTime + DURATION + 0.1);
+        shimmer.stop(audio.currentTime + DURATION + 0.1);
+        hit.stop(audio.currentTime + 5.7);
+      }
+
+      function start() {
+        if (running) return;
+        running = true;
+        statusEl.classList.remove("show");
+        statusEl.style.opacity = "0";
+        statusEl.textContent = "";
+        startBtn.classList.add("hidden");
+        startTime = performance.now();
+        playAudio();
+        raf = requestAnimationFrame(render);
+      }
+
+      window.addEventListener("resize", resize);
+      startBtn.addEventListener("click", start);
+      resize();
+    </script>
   </body>
 </html>
