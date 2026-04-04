@@ -3,12 +3,12 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Nano Awakening Intro</title>
+    <title>Cinematic Machine Flythrough</title>
     <style>
       :root {
-        --bg0: #02020a;
-        --bg1: #070a1b;
-        --fg: #dbf4ff;
+        --bg0: #010106;
+        --bg1: #04071a;
+        --fg: #dff7ff;
       }
 
       * {
@@ -21,7 +21,7 @@
         height: 100%;
         margin: 0;
         overflow: hidden;
-        background: radial-gradient(circle at 50% 85%, var(--bg1) 0%, var(--bg0) 58%, #000 100%);
+        background: radial-gradient(circle at 50% 82%, var(--bg1) 0%, var(--bg0) 52%, #000 100%);
         color: var(--fg);
         font-family: Inter, "Segoe UI", system-ui, sans-serif;
       }
@@ -30,7 +30,7 @@
         width: 100%;
         height: 100%;
         display: block;
-        filter: saturate(145%) contrast(114%);
+        filter: saturate(140%) contrast(116%);
       }
 
       .overlay {
@@ -39,16 +39,16 @@
         display: grid;
         place-items: end center;
         pointer-events: none;
-        padding: 2.4rem;
+        padding: 2rem;
       }
 
       #status {
         opacity: 0;
-        letter-spacing: 0.4rem;
-        font-size: clamp(0.8rem, 1.9vw, 1.4rem);
+        letter-spacing: 0.38rem;
+        font-size: clamp(0.72rem, 1.6vw, 1.2rem);
         text-transform: uppercase;
-        text-shadow: 0 0 24px rgba(130, 244, 255, 0.7), 0 0 70px rgba(178, 105, 255, 0.35);
-        transition: opacity 540ms ease;
+        text-shadow: 0 0 24px rgba(123, 241, 255, 0.7);
+        transition: opacity 480ms ease;
       }
 
       #status.show {
@@ -60,16 +60,16 @@
         top: 1.05rem;
         right: 1.05rem;
         pointer-events: auto;
-        border: 1px solid rgba(132, 240, 255, 0.22);
-        color: rgba(222, 248, 255, 0.84);
-        background: rgba(1, 6, 15, 0.42);
+        border: 1px solid rgba(132, 240, 255, 0.28);
+        color: rgba(225, 249, 255, 0.86);
+        background: rgba(1, 5, 14, 0.45);
         border-radius: 999px;
-        padding: 0.65rem 0.9rem;
+        padding: 0.66rem 0.9rem;
         text-transform: uppercase;
         letter-spacing: 0.08em;
         font-size: 0.68rem;
         cursor: pointer;
-        box-shadow: 0 0 18px rgba(58, 120, 255, 0.1);
+        box-shadow: 0 0 18px rgba(46, 111, 255, 0.1);
         backdrop-filter: blur(6px);
       }
 
@@ -83,7 +83,7 @@
     <canvas id="scene" aria-hidden="true"></canvas>
     <div class="overlay">
       <div id="status" aria-live="polite"></div>
-      <button id="startBtn">Begin</button>
+      <button id="startBtn">Awaken</button>
     </div>
 
     <script>
@@ -92,10 +92,11 @@
       const statusEl = document.getElementById("status");
       const startBtn = document.getElementById("startBtn");
 
-      const DURATION = 5.8;
+      const DURATION = 11.4;
       const STAR_COUNT = 1400;
-      const DUST_COUNT = 640;
-      const FILAMENTS = 64;
+      const RAIL_COUNT = 210;
+      const NODE_COUNT = 270;
+      const RING_COUNT = 65;
 
       let width = 0;
       let height = 0;
@@ -111,24 +112,34 @@
         seed: Math.random(),
       }));
 
-      const dust = Array.from({ length: DUST_COUNT }, () => ({
-        x: Math.random() * 2 - 1,
-        y: Math.random() * 2 - 1,
+      const rails = Array.from({ length: RAIL_COUNT }, () => ({
+        lane: (Math.random() * 2 - 1) * 1.45,
+        baseY: (Math.random() * 2 - 1) * 1.1,
         z: Math.random(),
-        r: Math.random() * 1.4 + 0.15,
-        p: Math.random() * Math.PI * 2,
+        width: Math.random() * 0.03 + 0.006,
+        phase: Math.random() * Math.PI * 2,
         seed: Math.random(),
       }));
 
-      const filaments = Array.from({ length: FILAMENTS }, (_, i) => ({
-        band: i % 4,
-        phase: Math.random() * Math.PI * 2,
-        offset: Math.random() * Math.PI * 2,
-        drift: Math.random() * 0.7 + 0.3,
+      const nodes = Array.from({ length: NODE_COUNT }, () => ({
+        x: (Math.random() * 2 - 1) * 1.45,
+        y: (Math.random() * 2 - 1) * 1.2,
+        z: Math.random(),
+        r: Math.random() * 0.018 + 0.005,
+        seed: Math.random(),
+        p: Math.random() * Math.PI * 2,
+      }));
+
+      const rings = Array.from({ length: RING_COUNT }, () => ({
+        z: Math.random(),
+        radius: Math.random() * 0.58 + 0.24,
+        tilt: (Math.random() * 2 - 1) * 0.6,
+        seed: Math.random(),
+        spin: (Math.random() * 2 - 1) * 0.8,
       }));
 
       const clamp01 = (v) => Math.max(0, Math.min(1, v));
-
+      const lerp = (a, b, t) => a + (b - a) * t;
       function smoothstep(a, b, x) {
         const t = clamp01((x - a) / (b - a));
         return t * t * (3 - 2 * t);
@@ -146,216 +157,265 @@
         canvas.style.height = `${window.innerHeight}px`;
       }
 
-      function flowField(x, y, t, seed = 0) {
-        const a = Math.sin(x * 2.8 + t * 0.22 + seed * 6) + Math.cos(y * 3.1 - t * 0.19 - seed * 4);
-        const b = Math.cos((x + y) * 2.2 - t * 0.17 + seed * 8);
+      function project(x, y, z, t, camX, camY) {
+        const zz = Math.max(0.02, z);
+        const warp = 0.06 * Math.sin(t * 0.75 + zz * 9 + x * 2.4);
+        const warp2 = 0.05 * Math.cos(t * 0.67 + zz * 11 + y * 2.2);
+        const depth = 2.25 / zz;
         return {
-          x: Math.sin(a + b) * 0.052,
-          y: Math.cos(a * 0.8 - b) * 0.052,
-        };
-      }
-
-      function project(p, t, tunnelPull, camX, camY) {
-        const flow = flowField(p.x, p.y, t, p.seed || 0);
-        const z = Math.max(0.04, p.z * (1 - tunnelPull * 0.34));
-        const depth = 2.05 / z;
-        const swirl = 0.07 * (0.22 + tunnelPull) * Math.sin(t * 0.72 + p.seed * 10 + z * 9);
-        return {
-          x: width * (0.5 + (p.x + swirl + flow.x + camX * z) * depth * 0.32),
-          y: height * (0.5 + (p.y - swirl * 0.45 + flow.y + camY * z) * depth * 0.32),
+          x: width * (0.5 + (x + warp + camX * zz) * depth * 0.26),
+          y: height * (0.5 + (y + warp2 + camY * zz) * depth * 0.26),
           depth,
-          z,
+          z: zz,
         };
       }
 
       function drawBackground(t) {
-        const bloom = smoothstep(0.08, 3.5, t);
-        const ascend = smoothstep(3.1, 5.55, t);
-        const breath = 0.5 + Math.sin(t * 0.62) * 0.5;
-        const introSurge = smoothstep(0.02, 0.9, t) * (1 - smoothstep(1.5, 2.3, t));
+        const awaken = smoothstep(0.1, 1.8, t);
+        const rush = smoothstep(2.1, 7.8, t);
+        const arrival = smoothstep(8.1, 11.2, t);
 
         const g = ctx.createRadialGradient(
-          width * (0.5 + Math.sin(t * 0.14) * 0.04),
-          height * (0.56 - ascend * 0.08),
-          width * (0.05 + bloom * 0.08),
+          width * (0.5 + Math.sin(t * 0.11) * 0.03),
+          height * (0.62 - arrival * 0.07),
+          width * (0.02 + awaken * 0.05),
           width * 0.5,
-          height * 0.52,
-          width * 0.9
+          height * 0.56,
+          width * 0.95
         );
-        g.addColorStop(0, `hsla(${260 + breath * 34}, 94%, ${15 + bloom * 20 + introSurge * 10}%, 0.95)`);
-        g.addColorStop(0.26, `hsla(${297 - breath * 18}, 88%, ${12 + bloom * 17 + introSurge * 7}%, 0.86)`);
-        g.addColorStop(0.56, `hsla(${196 + breath * 20}, 86%, ${8 + bloom * 10}%, 0.72)`);
+        g.addColorStop(0, `hsla(${214 + rush * 12}, 100%, ${4 + awaken * 16 + arrival * 14}%, 0.98)`);
+        g.addColorStop(0.48, `hsla(${233 + rush * 8}, 72%, ${3 + awaken * 7}%, 0.9)`);
         g.addColorStop(1, "rgba(0,0,0,0.99)");
         ctx.fillStyle = g;
         ctx.fillRect(0, 0, width, height);
 
-        const veilA = smoothstep(0.5, 3.2, t) * (1 - smoothstep(5.2, 5.8, t));
-        if (veilA > 0) {
-          const veil = ctx.createLinearGradient(0, 0, width, height);
-          veil.addColorStop(0, `hsla(286, 88%, 52%, ${0.05 * veilA})`);
-          veil.addColorStop(0.45, `hsla(196, 90%, 54%, ${0.08 * veilA})`);
-          veil.addColorStop(1, `hsla(312, 84%, 50%, ${0.045 * veilA})`);
-          ctx.fillStyle = veil;
-          ctx.fillRect(0, 0, width, height);
-        }
+        const vignette = ctx.createLinearGradient(0, 0, width, height);
+        vignette.addColorStop(0, `rgba(6, 18, 42, ${0.06 + rush * 0.08})`);
+        vignette.addColorStop(1, `rgba(0, 0, 0, ${0.32 + arrival * 0.16})`);
+        ctx.fillStyle = vignette;
+        ctx.fillRect(0, 0, width, height);
       }
 
-      function drawStarField(t, camX, camY) {
-        const wake = smoothstep(0.05, 1.72, t);
-        const tunnel = smoothstep(0.65, 4.95, t);
-        const rhythm = 0.5 + 0.5 * Math.sin(t * 5.8 + Math.sin(t * 0.8));
+      function advanceZ(p, speed, dt = 0.016) {
+        p.z -= speed * dt;
+        if (p.z < 0.015) p.z += 1;
+      }
+
+      function drawStars(t, camX, camY, speed) {
+        const awaken = smoothstep(0, 2.2, t);
+        const rush = smoothstep(1.7, 7.5, t);
+        const flash = smoothstep(9.2, 11.2, t);
+        const dt = 0.016;
 
         for (const p of stars) {
-          const q = project(p, t, tunnel, camX, camY);
-          if (q.x < -24 || q.x > width + 24 || q.y < -24 || q.y > height + 24) continue;
+          advanceZ(p, speed * (0.55 + p.seed * 0.8), dt);
+          const q = project(p.x, p.y, p.z, t, camX, camY);
+          if (q.x < -20 || q.x > width + 20 || q.y < -20 || q.y > height + 20) continue;
 
-          const tw = 0.5 + 0.5 * Math.sin(t * (2.2 + p.seed) + p.tw + p.z * 8);
-          const breathe = 0.5 + 0.5 * Math.sin(t * 0.9 + p.seed * 11);
-          const size = (0.3 + (1 - p.z) * 2.15) * (0.5 + tunnel * 0.74 + rhythm * 0.08) * q.depth * 0.56;
-          const hue = 188 + 132 * (0.5 + 0.5 * Math.sin(p.seed * 12 + t * 0.18 + p.z * 5));
-          const a = (0.04 + wake * 0.38) * (0.4 + tw * 0.75) * (0.5 + (1 - p.z)) * (0.82 + breathe * 0.25 + rhythm * 0.15);
+          const tw = 0.5 + 0.5 * Math.sin(t * (2 + p.seed * 5) + p.tw + p.z * 10);
+          const streak = 1 + rush * q.depth * 0.42;
+          const size = (0.35 + (1 - p.z) * 1.6) * q.depth * 0.38;
+          const hue = lerp(198, 216, p.seed);
+          const a = (0.05 + awaken * 0.38 + flash * 0.2) * (0.45 + tw * 0.75);
 
-          ctx.fillStyle = `hsla(${hue}, 100%, ${66 + tw * 19}%, ${a})`;
+          ctx.strokeStyle = `hsla(${hue}, 100%, ${72 + tw * 20}%, ${a})`;
+          ctx.lineWidth = Math.max(1, size * 0.9);
           ctx.beginPath();
-          ctx.arc(q.x, q.y, size, 0, Math.PI * 2);
-          ctx.fill();
-        }
-      }
-
-      function drawDust(t, camX, camY) {
-        const emerge = smoothstep(0.04, 1.46, t);
-        const awaken = smoothstep(2.3, 5.5, t);
-        const rhythm = 0.5 + 0.5 * Math.sin(t * 5.8 + 0.9);
-
-        ctx.globalCompositeOperation = "lighter";
-        for (const p of dust) {
-          const flow = flowField(p.x * 1.3, p.y * 1.3, t * 1.2, p.seed);
-          const driftX = Math.sin(t * 0.38 + p.p) * 0.05 + flow.x * (0.6 + awaken);
-          const driftY = Math.cos(t * 0.41 + p.p * 0.9) * 0.045 + flow.y * (0.6 + awaken);
-          const q = project({ ...p, x: p.x + driftX, y: p.y + driftY }, t, awaken * 0.68, camX * 1.35, camY * 1.35);
-          if (q.x < -34 || q.x > width + 34 || q.y < -34 || q.y > height + 34) continue;
-
-          const halo = p.r * q.depth * (0.9 + awaken * 1.2 + rhythm * 0.16);
-          const alpha = (0.012 + emerge * 0.065 + awaken * 0.036 + rhythm * 0.012) * (1.2 - p.z);
-          const hue = 186 + 124 * (0.5 + 0.5 * Math.sin(p.seed * 10 + t * 0.3));
-
-          ctx.fillStyle = `hsla(${hue}, 100%, ${61 + p.z * 24}%, ${alpha})`;
-          ctx.beginPath();
-          ctx.arc(q.x, q.y, halo, 0, Math.PI * 2);
-          ctx.fill();
-        }
-        ctx.globalCompositeOperation = "source-over";
-      }
-
-      function drawFilamentStructures(t) {
-        const reveal = smoothstep(0.75, 3.4, t);
-        const sentient = smoothstep(2.6, 5.4, t);
-        const cx = width * 0.5;
-        const cy = height * 0.5;
-
-        ctx.save();
-        ctx.translate(cx, cy);
-        ctx.globalCompositeOperation = "lighter";
-
-        for (const f of filaments) {
-          const rot = t * (0.12 + f.band * 0.03) + f.offset;
-          const arc = Math.PI * (0.45 + f.band * 0.11);
-          const r0 = width * (0.08 + f.band * 0.05);
-
-          const px = Math.cos(rot + f.phase) * r0;
-          const py = Math.sin(rot * 1.2 - f.phase) * r0 * 0.55;
-          const flow = flowField(px / width, py / height, t * 2.1, f.drift);
-
-          const x1 = Math.cos(rot - arc) * r0;
-          const y1 = Math.sin((rot - arc) * 1.35) * r0 * 0.6;
-          const x2 = Math.cos(rot + arc) * r0;
-          const y2 = Math.sin((rot + arc) * 1.35) * r0 * 0.6;
-
-          const c1x = px + flow.x * width * (0.6 + sentient) + Math.cos(rot * 2.3 + f.phase) * width * 0.04;
-          const c1y = py + flow.y * height * (0.6 + sentient) + Math.sin(rot * 1.9 - f.phase) * height * 0.03;
-          const c2x = -c1x * 0.78;
-          const c2y = -c1y * 0.78;
-
-          ctx.beginPath();
-          ctx.moveTo(x1, y1);
-          ctx.bezierCurveTo(c1x, c1y, c2x, c2y, x2, y2);
-
-          const hue = 188 + 125 * ((f.band + 1) / 5) + Math.sin(t * 0.4 + f.phase) * 18;
-          const alpha = 0.012 + reveal * 0.056 + sentient * 0.095;
-          ctx.strokeStyle = `hsla(${hue}, 98%, ${60 + f.band * 6}%, ${alpha})`;
-          ctx.lineWidth = 0.55 + f.band * 0.28;
+          ctx.moveTo(q.x, q.y);
+          ctx.lineTo(q.x - streak * speed * 0.9, q.y + streak * 0.4);
           ctx.stroke();
         }
+      }
 
-        ctx.restore();
+      function drawRails(t, camX, camY, speed) {
+        const build = smoothstep(1.2, 5.2, t);
+        const dense = smoothstep(4.5, 9.3, t);
+        const dt = 0.016;
+
+        ctx.globalCompositeOperation = "lighter";
+        for (const r of rails) {
+          advanceZ(r, speed * (1.2 + r.seed), dt);
+          const wave = Math.sin(t * 1.25 + r.phase + r.z * 8) * 0.3;
+          const y = r.baseY + wave * (0.2 + dense * 0.35);
+
+          const a = project(r.lane - r.width, y, r.z, t, camX * 1.3, camY * 1.2);
+          const b = project(r.lane + r.width, y, Math.min(1, r.z + 0.07), t, camX * 1.3, camY * 1.2);
+          const c = project(r.lane, y + 0.09, Math.min(1, r.z + 0.13), t, camX * 1.2, camY * 1.2);
+
+          const alpha = (0.03 + build * 0.2 + dense * 0.2) * (1.1 - r.z);
+          const hue = 194 + Math.sin(r.seed * 16 + t * 0.4) * 22;
+
+          ctx.fillStyle = `hsla(${hue}, 100%, ${58 + dense * 22}%, ${alpha})`;
+          ctx.beginPath();
+          ctx.moveTo(a.x, a.y);
+          ctx.lineTo(b.x, b.y);
+          ctx.lineTo(c.x, c.y);
+          ctx.closePath();
+          ctx.fill();
+
+          if (dense > 0.35) {
+            ctx.strokeStyle = `hsla(${hue + 12}, 100%, 78%, ${alpha * 0.9})`;
+            ctx.lineWidth = Math.max(1, a.depth * 0.6);
+            ctx.beginPath();
+            ctx.moveTo(a.x, a.y);
+            ctx.lineTo(b.x, b.y);
+            ctx.stroke();
+          }
+        }
         ctx.globalCompositeOperation = "source-over";
       }
 
-      function drawAwakeningCore(t) {
-        const form = smoothstep(2.0, 4.25, t);
-        const charge = smoothstep(3.7, 5.3, t);
-        const transcend = smoothstep(4.96, 5.66, t);
-        const cx = width * 0.5;
-        const cy = height * 0.5;
+      function drawNodes(t, camX, camY, speed) {
+        const rise = smoothstep(0.6, 3.2, t);
+        const discover = smoothstep(2.5, 8.4, t);
+        const arrival = smoothstep(8.5, 11.2, t);
+        const dt = 0.016;
 
-        const orbR = width * (0.018 + 0.022 * form + 0.015 * charge);
-        const pulse = 1 + 0.12 * Math.sin(t * 8.8 + Math.sin(t * 1.3));
+        ctx.globalCompositeOperation = "lighter";
+        for (const n of nodes) {
+          advanceZ(n, speed * (0.85 + n.seed * 1.2), dt);
+          n.x += Math.sin(t * 0.5 + n.p + n.seed * 7) * 0.0007;
+          n.y += Math.cos(t * 0.42 + n.p) * 0.0006;
 
-        const aura = ctx.createRadialGradient(cx, cy, 0, cx, cy, orbR * (12 + charge * 4.5));
-        aura.addColorStop(0, `rgba(180, 250, 255, ${0.52 * form + 0.26 * charge})`);
-        aura.addColorStop(0.25, `rgba(132, 228, 255, ${0.28 * form + 0.22 * charge})`);
-        aura.addColorStop(0.5, `rgba(160, 110, 255, ${0.22 * form + 0.2 * charge})`);
-        aura.addColorStop(0.75, `rgba(255, 94, 223, ${0.1 * form + 0.12 * charge})`);
-        aura.addColorStop(1, "rgba(0, 0, 0, 0)");
-        ctx.fillStyle = aura;
+          if (n.x > 1.5) n.x = -1.5;
+          if (n.x < -1.5) n.x = 1.5;
+          if (n.y > 1.28) n.y = -1.28;
+          if (n.y < -1.28) n.y = 1.28;
+
+          const p = project(n.x, n.y, n.z, t, camX * 1.1, camY * 1.1);
+          if (p.x < -30 || p.x > width + 30 || p.y < -30 || p.y > height + 30) continue;
+
+          const glowR = n.r * p.depth * width * (0.008 + discover * 0.006);
+          const pulse = 0.5 + 0.5 * Math.sin(t * 4.2 + n.seed * 12 + n.z * 20);
+          const alpha = (0.04 + rise * 0.26 + arrival * 0.14) * (1.15 - n.z) * (0.55 + pulse * 0.75);
+          const hue = 188 + pulse * 38;
+
+          const g = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, glowR * 3.8);
+          g.addColorStop(0, `hsla(${hue}, 100%, 82%, ${alpha})`);
+          g.addColorStop(0.3, `hsla(${hue + 18}, 100%, 66%, ${alpha * 0.66})`);
+          g.addColorStop(1, "rgba(0,0,0,0)");
+          ctx.fillStyle = g;
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, glowR * 3.8, 0, Math.PI * 2);
+          ctx.fill();
+        }
+        ctx.globalCompositeOperation = "source-over";
+      }
+
+      function drawRings(t, camX, camY, speed) {
+        const discover = smoothstep(3.2, 8.8, t);
+        const corridor = smoothstep(6.2, 11.2, t);
+        const dt = 0.016;
+
+        ctx.globalCompositeOperation = "lighter";
+        for (const r of rings) {
+          advanceZ(r, speed * (1.45 + r.seed), dt);
+          const p = project(0, 0, r.z, t, camX * 0.9, camY * 0.9);
+          const radius = (r.radius + Math.sin(t * 0.8 + r.seed * 10) * 0.03) * p.depth * width * 0.055;
+          const alpha = (0.02 + discover * 0.2 + corridor * 0.2) * (1.08 - r.z);
+
+          ctx.save();
+          ctx.translate(p.x, p.y);
+          ctx.rotate(r.spin * t * 0.27 + r.tilt);
+          ctx.scale(1, 0.42 + Math.sin(t * 0.6 + r.seed * 5) * 0.08);
+          ctx.strokeStyle = `hsla(${200 + r.seed * 26}, 100%, ${56 + corridor * 28}%, ${alpha})`;
+          ctx.lineWidth = Math.max(1, p.depth * 0.45);
+          ctx.setLineDash([18 + r.seed * 28, 12 + (1 - r.seed) * 24]);
+          ctx.beginPath();
+          ctx.arc(0, 0, radius, 0, Math.PI * 2);
+          ctx.stroke();
+          ctx.restore();
+        }
+        ctx.setLineDash([]);
+        ctx.globalCompositeOperation = "source-over";
+      }
+
+      function drawConsciousness(t, speed) {
+        const born = smoothstep(0.05, 1.2, t);
+        const rush = smoothstep(2.1, 8.6, t);
+        const arrival = smoothstep(8.7, 11.2, t);
+
+        const cx = width * 0.5 + Math.sin(t * 0.9) * width * 0.02;
+        const cy = height * (0.54 + Math.cos(t * 0.7) * 0.02);
+        const radius = width * (0.004 + born * 0.003 + arrival * 0.001);
+
+        const glow = ctx.createRadialGradient(cx, cy, 0, cx, cy, radius * (14 + rush * 8));
+        glow.addColorStop(0, `rgba(220, 252, 255, ${0.85 + arrival * 0.15})`);
+        glow.addColorStop(0.3, `rgba(132, 231, 255, ${0.55 + rush * 0.35})`);
+        glow.addColorStop(1, "rgba(0,0,0,0)");
+
+        ctx.globalCompositeOperation = "lighter";
+        ctx.fillStyle = glow;
         ctx.beginPath();
-        ctx.arc(cx, cy, orbR * (12 + charge * 4.5), 0, Math.PI * 2);
+        ctx.arc(cx, cy, radius * (13 + rush * 7), 0, Math.PI * 2);
         ctx.fill();
 
-        for (let i = 0; i < 3; i++) {
-          const wobble = 1 + Math.sin(t * (1.7 + i * 0.4) + i * 1.2) * 0.07;
-          const rr = width * (0.09 + i * 0.055) * (1 + charge * 0.16) * wobble;
+        ctx.fillStyle = `rgba(230, 254, 255, ${0.9})`;
+        ctx.beginPath();
+        ctx.arc(cx, cy, radius * (1.05 + Math.sin(t * 8) * 0.12), 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.strokeStyle = `rgba(146, 230, 255, ${0.16 + rush * 0.4})`;
+        ctx.lineWidth = Math.max(1, radius * 0.22 * speed);
+        ctx.beginPath();
+        ctx.moveTo(cx - radius * (30 + rush * 80), cy + radius * 0.8);
+        ctx.lineTo(cx - radius * 1.2, cy + radius * 0.1);
+        ctx.stroke();
+        ctx.globalCompositeOperation = "source-over";
+      }
+
+      function drawNexus(t) {
+        const pull = smoothstep(8.4, 11.1, t);
+        if (pull <= 0) return;
+
+        const cx = width * 0.5;
+        const cy = height * 0.5;
+        const r = width * (0.03 + pull * 0.06);
+
+        ctx.globalCompositeOperation = "lighter";
+        const g = ctx.createRadialGradient(cx, cy, 0, cx, cy, r * 7);
+        g.addColorStop(0, `rgba(217,251,255,${0.36 + pull * 0.58})`);
+        g.addColorStop(0.34, `rgba(119,228,255,${0.25 + pull * 0.36})`);
+        g.addColorStop(1, "rgba(0,0,0,0)");
+        ctx.fillStyle = g;
+        ctx.beginPath();
+        ctx.arc(cx, cy, r * 7, 0, Math.PI * 2);
+        ctx.fill();
+
+        for (let i = 0; i < 6; i++) {
           ctx.save();
           ctx.translate(cx, cy);
-          ctx.rotate(t * (0.17 + i * 0.05) * (i % 2 ? -1 : 1));
-          ctx.strokeStyle = `hsla(${196 + i * 48}, 96%, ${63 + i * 8}%, ${0.09 + form * 0.1 + charge * 0.12})`;
-          ctx.lineWidth = 0.9 + i * 0.36;
+          ctx.rotate(t * 0.4 + i * (Math.PI / 3));
+          ctx.strokeStyle = `rgba(150, 236, 255, ${0.18 + pull * 0.34})`;
+          ctx.lineWidth = Math.max(1.2, r * 0.03);
           ctx.beginPath();
-          ctx.ellipse(0, 0, rr, rr * (0.48 + i * 0.08), Math.sin(t * 0.6 + i), 0, Math.PI * 2);
+          ctx.moveTo(r * (1.6 + i * 0.2), 0);
+          ctx.lineTo(r * (4.1 + i * 0.3), 0);
           ctx.stroke();
           ctx.restore();
         }
 
-        ctx.fillStyle = `rgba(210, 252, 255, ${0.7 * form + 0.16 * charge})`;
+        ctx.fillStyle = `rgba(233,255,255,${0.56 + pull * 0.44})`;
         ctx.beginPath();
-        ctx.arc(cx, cy, orbR * pulse, 0, Math.PI * 2);
+        ctx.arc(cx, cy, r * 0.46, 0, Math.PI * 2);
         ctx.fill();
-
-        if (transcend > 0) {
-          const flash = easeOutExpo(transcend) * (1 - smoothstep(5.66, 5.8, t));
-          const veil = ctx.createRadialGradient(cx, cy, 0, cx, cy, width * 0.86);
-          veil.addColorStop(0, `rgba(222, 255, 255, ${flash * 0.34})`);
-          veil.addColorStop(0.3, `rgba(196, 160, 255, ${flash * 0.24})`);
-          veil.addColorStop(0.62, `rgba(138, 255, 255, ${flash * 0.14})`);
-          veil.addColorStop(1, "rgba(0,0,0,0)");
-          ctx.fillStyle = veil;
-          ctx.fillRect(0, 0, width, height);
-        }
+        ctx.globalCompositeOperation = "source-over";
       }
 
-      function drawVignetteAndStatus(t) {
-        const lock = smoothstep(5.0, 5.72, t);
-        if (lock > 0) {
-          statusEl.textContent = "WE ARE INSIDE THE DREAM";
-          statusEl.style.opacity = String(lock * 0.9);
-          statusEl.classList.toggle("show", lock > 0.12);
-        }
-
-        const v = ctx.createRadialGradient(width * 0.5, height * 0.5, width * 0.28, width * 0.5, height * 0.5, width * 0.78);
-        v.addColorStop(0, "rgba(0,0,0,0)");
-        v.addColorStop(1, "rgba(0,0,0,0.46)");
-        ctx.fillStyle = v;
+      function drawVignette(t) {
+        const arrival = smoothstep(8.6, 11.3, t);
+        const edge = ctx.createRadialGradient(width * 0.5, height * 0.5, width * 0.28, width * 0.5, height * 0.5, width * 0.78);
+        edge.addColorStop(0, "rgba(0,0,0,0)");
+        edge.addColorStop(1, `rgba(0, 0, 0, ${0.52 + arrival * 0.28})`);
+        ctx.fillStyle = edge;
         ctx.fillRect(0, 0, width, height);
+      }
+
+      function updateStatus(t) {
+        const show = smoothstep(9.7, 11.2, t);
+        statusEl.textContent = "NEXUS ARRIVAL";
+        statusEl.classList.toggle("show", show > 0.08);
+        statusEl.style.opacity = String(show);
       }
 
       function render(now) {
@@ -367,144 +427,110 @@
           return;
         }
 
-        const inward = smoothstep(0.0, 1.9, t);
-        const destiny = smoothstep(4.6, 5.7, t);
-        const camX = Math.sin(t * 0.24) * (0.02 - inward * 0.004 + destiny * 0.003);
-        const camY = Math.cos(t * 0.21 + Math.sin(t * 0.4)) * (0.018 - inward * 0.003 + destiny * 0.003);
+        const awaken = smoothstep(0.25, 1.5, t);
+        const accelerate = smoothstep(1.2, 6.8, t);
+        const maxRush = smoothstep(5.5, 9.2, t);
+        const settle = 1 - smoothstep(9.5, 11.2, t);
+        const speed = 0.2 + awaken * 0.5 + accelerate * 1.8 + maxRush * 2.4 * settle;
+
+        const camX = Math.sin(t * 0.42) * 0.06 + Math.sin(t * 1.15) * 0.02;
+        const camY = Math.cos(t * 0.31) * 0.05 + Math.sin(t * 0.8 + 1.2) * 0.02;
 
         ctx.clearRect(0, 0, width, height);
         drawBackground(t);
-        drawStarField(t, camX, camY);
-        drawDust(t, camX, camY);
-        drawFilamentStructures(t);
-        drawAwakeningCore(t);
-        drawVignetteAndStatus(t);
+        drawStars(t, camX, camY, speed);
+        drawRails(t, camX, camY, speed);
+        drawNodes(t, camX, camY, speed);
+        drawRings(t, camX, camY, speed);
+        drawConsciousness(t, speed);
+        drawNexus(t);
+        drawVignette(t);
+        updateStatus(t);
 
         raf = requestAnimationFrame(render);
       }
 
-      function playAudio() {
+      function runAudio() {
         const audio = new (window.AudioContext || window.webkitAudioContext)();
         const master = audio.createGain();
-        master.gain.value = 0.19;
+        master.gain.value = 0.2;
         master.connect(audio.destination);
 
         const now = audio.currentTime;
 
-        const makeNoise = () => {
-          const b = audio.createBuffer(1, audio.sampleRate * DURATION, audio.sampleRate);
-          const d = b.getChannelData(0);
-          let lp = 0;
-          for (let i = 0; i < d.length; i++) {
-            lp = lp * 0.986 + (Math.random() * 2 - 1) * 0.06;
-            d[i] = lp;
-          }
-          return b;
-        };
+        const low = audio.createOscillator();
+        low.type = "sine";
+        low.frequency.setValueAtTime(34, now);
+        low.frequency.linearRampToValueAtTime(42, now + 3);
+        low.frequency.linearRampToValueAtTime(65, now + 9.2);
+        const lowGain = audio.createGain();
+        lowGain.gain.setValueAtTime(0.0001, now);
+        lowGain.gain.exponentialRampToValueAtTime(0.36, now + 1.3);
+        lowGain.gain.linearRampToValueAtTime(0.22, now + DURATION);
+        low.connect(lowGain).connect(master);
 
-        const cosmic = audio.createBufferSource();
-        cosmic.buffer = makeNoise();
-        const cosmicFilter = audio.createBiquadFilter();
-        cosmicFilter.type = "bandpass";
-        cosmicFilter.frequency.setValueAtTime(420, now);
-        cosmicFilter.frequency.exponentialRampToValueAtTime(2600, now + 5.4);
-        cosmicFilter.Q.value = 0.8;
-        const cosmicGain = audio.createGain();
-        cosmicGain.gain.setValueAtTime(0.0001, now);
-        cosmicGain.gain.exponentialRampToValueAtTime(0.13, now + 1.1);
-        cosmicGain.gain.linearRampToValueAtTime(0.05, now + DURATION);
-        cosmic.connect(cosmicFilter).connect(cosmicGain).connect(master);
+        const choir = audio.createOscillator();
+        choir.type = "triangle";
+        choir.frequency.setValueAtTime(96, now + 0.3);
+        choir.frequency.exponentialRampToValueAtTime(240, now + 8.9);
+        const choirGain = audio.createGain();
+        choirGain.gain.setValueAtTime(0.0001, now + 0.3);
+        choirGain.gain.exponentialRampToValueAtTime(0.22, now + 4.8);
+        choirGain.gain.linearRampToValueAtTime(0.1, now + DURATION);
+        choir.connect(choirGain).connect(master);
 
-        const sub = audio.createOscillator();
-        sub.type = "sine";
-        sub.frequency.setValueAtTime(44, now);
-        sub.frequency.linearRampToValueAtTime(64, now + 5.2);
-        const subGain = audio.createGain();
-        subGain.gain.setValueAtTime(0.0001, now);
-        subGain.gain.exponentialRampToValueAtTime(0.22, now + 1.05);
-        subGain.gain.linearRampToValueAtTime(0.12, now + DURATION);
-        sub.connect(subGain).connect(master);
+        const noiseBuffer = audio.createBuffer(1, audio.sampleRate * 0.04, audio.sampleRate);
+        const data = noiseBuffer.getChannelData(0);
+        for (let i = 0; i < data.length; i++) {
+          data[i] = (Math.random() * 2 - 1) * Math.exp(-i / 160);
+        }
 
-        const chordFreq = [174.61, 261.63, 392.0];
-        chordFreq.forEach((f, i) => {
-          const osc = audio.createOscillator();
-          osc.type = i === 2 ? "triangle" : "sine";
-          osc.frequency.setValueAtTime(f, now + 0.85);
-          osc.frequency.exponentialRampToValueAtTime(f * (1.5 + i * 0.14), now + 5.25);
+        for (let i = 0; i < 34; i++) {
+          const src = audio.createBufferSource();
+          src.buffer = noiseBuffer;
           const g = audio.createGain();
-          g.gain.setValueAtTime(0.0001, now + 0.8);
-          g.gain.exponentialRampToValueAtTime(0.03 + i * 0.012, now + 2.2 + i * 0.2);
-          g.gain.linearRampToValueAtTime(0.02, now + 4.8);
-          g.gain.exponentialRampToValueAtTime(0.0001, now + 5.72);
-          osc.connect(g).connect(master);
-          osc.start(now + 0.8);
-          osc.stop(now + 5.76);
-        });
-
-        for (let i = 0; i < 10; i++) {
-          const ping = audio.createOscillator();
-          ping.type = "sine";
-          const at = now + 0.92 + i * 0.4;
-          ping.frequency.setValueAtTime(680 + i * 76, at);
-          ping.frequency.exponentialRampToValueAtTime(260 + i * 12, at + 0.16);
-          const pg = audio.createGain();
-          pg.gain.setValueAtTime(0.0001, at);
-          pg.gain.exponentialRampToValueAtTime(0.022 + i * 0.0015, at + 0.02);
-          pg.gain.exponentialRampToValueAtTime(0.0001, at + 0.22);
-          ping.connect(pg).connect(master);
-          ping.start(at);
-          ping.stop(at + 0.24);
+          const when = now + 1.1 + i * 0.27 + Math.random() * 0.15;
+          g.gain.setValueAtTime(0.04, when);
+          g.gain.exponentialRampToValueAtTime(0.0001, when + 0.06);
+          src.connect(g).connect(master);
+          src.start(when);
         }
 
-        for (let i = 0; i < 6; i++) {
-          const throb = audio.createOscillator();
-          throb.type = "triangle";
-          const at = now + 1.08 + i * 0.62;
-          throb.frequency.setValueAtTime(96 + i * 4, at);
-          throb.frequency.exponentialRampToValueAtTime(54 + i * 2, at + 0.21);
-          const tg = audio.createGain();
-          tg.gain.setValueAtTime(0.0001, at);
-          tg.gain.exponentialRampToValueAtTime(0.034 + i * 0.004, at + 0.04);
-          tg.gain.exponentialRampToValueAtTime(0.0001, at + 0.24);
-          throb.connect(tg).connect(master);
-          throb.start(at);
-          throb.stop(at + 0.3);
-        }
+        const arrival = audio.createOscillator();
+        arrival.type = "sawtooth";
+        arrival.frequency.setValueAtTime(350, now + 9.3);
+        arrival.frequency.exponentialRampToValueAtTime(72, now + 10.7);
+        const arrivalGain = audio.createGain();
+        arrivalGain.gain.setValueAtTime(0.0001, now + 9.2);
+        arrivalGain.gain.exponentialRampToValueAtTime(0.38, now + 9.45);
+        arrivalGain.gain.exponentialRampToValueAtTime(0.0001, now + 11.25);
+        arrival.connect(arrivalGain).connect(master);
 
-        const bloom = audio.createOscillator();
-        bloom.type = "sawtooth";
-        bloom.frequency.setValueAtTime(312, now + 5.03);
-        bloom.frequency.exponentialRampToValueAtTime(72, now + 5.54);
-        const bloomGain = audio.createGain();
-        bloomGain.gain.setValueAtTime(0.0001, now + 4.98);
-        bloomGain.gain.exponentialRampToValueAtTime(0.37, now + 5.06);
-        bloomGain.gain.exponentialRampToValueAtTime(0.0001, now + 5.74);
-        bloom.connect(bloomGain).connect(master);
+        low.start(now);
+        choir.start(now + 0.3);
+        arrival.start(now + 9.2);
 
-        cosmic.start(now);
-        sub.start(now);
-        bloom.start(now + 5.0);
-
-        cosmic.stop(now + DURATION + 0.1);
-        sub.stop(now + DURATION + 0.1);
-        bloom.stop(now + 5.76);
+        low.stop(now + DURATION + 0.2);
+        choir.stop(now + DURATION + 0.2);
+        arrival.stop(now + DURATION + 0.2);
       }
 
-      function start() {
+      function begin() {
         if (running) return;
         running = true;
-        statusEl.classList.remove("show");
-        statusEl.style.opacity = "0";
-        statusEl.textContent = "";
         startBtn.classList.add("hidden");
+        statusEl.classList.remove("show");
+        statusEl.textContent = "";
         startTime = performance.now();
-        playAudio();
+        runAudio();
         raf = requestAnimationFrame(render);
       }
 
       window.addEventListener("resize", resize);
-      startBtn.addEventListener("click", start);
+      startBtn.addEventListener("click", begin);
       resize();
+      drawBackground(0);
+      drawConsciousness(0, 0.2);
     </script>
   </body>
 </html>
