@@ -169,9 +169,10 @@
       }
 
       function drawBackground(t) {
-        const bloom = smoothstep(0.2, 3.8, t);
+        const bloom = smoothstep(0.08, 3.5, t);
         const ascend = smoothstep(3.1, 5.55, t);
-        const breath = 0.5 + Math.sin(t * 0.55) * 0.5;
+        const breath = 0.5 + Math.sin(t * 0.62) * 0.5;
+        const introSurge = smoothstep(0.02, 0.9, t) * (1 - smoothstep(1.5, 2.3, t));
 
         const g = ctx.createRadialGradient(
           width * (0.5 + Math.sin(t * 0.14) * 0.04),
@@ -181,8 +182,8 @@
           height * 0.52,
           width * 0.9
         );
-        g.addColorStop(0, `hsla(${260 + breath * 34}, 94%, ${15 + bloom * 20}%, 0.95)`);
-        g.addColorStop(0.26, `hsla(${297 - breath * 18}, 88%, ${12 + bloom * 17}%, 0.86)`);
+        g.addColorStop(0, `hsla(${260 + breath * 34}, 94%, ${15 + bloom * 20 + introSurge * 10}%, 0.95)`);
+        g.addColorStop(0.26, `hsla(${297 - breath * 18}, 88%, ${12 + bloom * 17 + introSurge * 7}%, 0.86)`);
         g.addColorStop(0.56, `hsla(${196 + breath * 20}, 86%, ${8 + bloom * 10}%, 0.72)`);
         g.addColorStop(1, "rgba(0,0,0,0.99)");
         ctx.fillStyle = g;
@@ -200,8 +201,9 @@
       }
 
       function drawStarField(t, camX, camY) {
-        const wake = smoothstep(0.15, 2.2, t);
-        const tunnel = smoothstep(1.25, 5.0, t);
+        const wake = smoothstep(0.05, 1.72, t);
+        const tunnel = smoothstep(0.65, 4.95, t);
+        const rhythm = 0.5 + 0.5 * Math.sin(t * 5.8 + Math.sin(t * 0.8));
 
         for (const p of stars) {
           const q = project(p, t, tunnel, camX, camY);
@@ -209,9 +211,9 @@
 
           const tw = 0.5 + 0.5 * Math.sin(t * (2.2 + p.seed) + p.tw + p.z * 8);
           const breathe = 0.5 + 0.5 * Math.sin(t * 0.9 + p.seed * 11);
-          const size = (0.3 + (1 - p.z) * 2.15) * (0.5 + tunnel * 0.74) * q.depth * 0.56;
+          const size = (0.3 + (1 - p.z) * 2.15) * (0.5 + tunnel * 0.74 + rhythm * 0.08) * q.depth * 0.56;
           const hue = 188 + 132 * (0.5 + 0.5 * Math.sin(p.seed * 12 + t * 0.18 + p.z * 5));
-          const a = (0.04 + wake * 0.38) * (0.4 + tw * 0.75) * (0.5 + (1 - p.z)) * (0.85 + breathe * 0.2);
+          const a = (0.04 + wake * 0.38) * (0.4 + tw * 0.75) * (0.5 + (1 - p.z)) * (0.82 + breathe * 0.25 + rhythm * 0.15);
 
           ctx.fillStyle = `hsla(${hue}, 100%, ${66 + tw * 19}%, ${a})`;
           ctx.beginPath();
@@ -221,8 +223,9 @@
       }
 
       function drawDust(t, camX, camY) {
-        const emerge = smoothstep(0.1, 1.85, t);
+        const emerge = smoothstep(0.04, 1.46, t);
         const awaken = smoothstep(2.3, 5.5, t);
+        const rhythm = 0.5 + 0.5 * Math.sin(t * 5.8 + 0.9);
 
         ctx.globalCompositeOperation = "lighter";
         for (const p of dust) {
@@ -232,8 +235,8 @@
           const q = project({ ...p, x: p.x + driftX, y: p.y + driftY }, t, awaken * 0.68, camX * 1.35, camY * 1.35);
           if (q.x < -34 || q.x > width + 34 || q.y < -34 || q.y > height + 34) continue;
 
-          const halo = p.r * q.depth * (0.9 + awaken * 1.2);
-          const alpha = (0.012 + emerge * 0.065 + awaken * 0.036) * (1.2 - p.z);
+          const halo = p.r * q.depth * (0.9 + awaken * 1.2 + rhythm * 0.16);
+          const alpha = (0.012 + emerge * 0.065 + awaken * 0.036 + rhythm * 0.012) * (1.2 - p.z);
           const hue = 186 + 124 * (0.5 + 0.5 * Math.sin(p.seed * 10 + t * 0.3));
 
           ctx.fillStyle = `hsla(${hue}, 100%, ${61 + p.z * 24}%, ${alpha})`;
@@ -291,12 +294,12 @@
       function drawAwakeningCore(t) {
         const form = smoothstep(2.0, 4.25, t);
         const charge = smoothstep(3.7, 5.3, t);
-        const transcend = smoothstep(5.08, 5.72, t);
+        const transcend = smoothstep(4.96, 5.66, t);
         const cx = width * 0.5;
         const cy = height * 0.5;
 
         const orbR = width * (0.018 + 0.022 * form + 0.015 * charge);
-        const pulse = 1 + 0.11 * Math.sin(t * 8.4 + Math.sin(t * 1.3));
+        const pulse = 1 + 0.12 * Math.sin(t * 8.8 + Math.sin(t * 1.3));
 
         const aura = ctx.createRadialGradient(cx, cy, 0, cx, cy, orbR * (12 + charge * 4.5));
         aura.addColorStop(0, `rgba(180, 250, 255, ${0.52 * form + 0.26 * charge})`);
@@ -329,7 +332,7 @@
         ctx.fill();
 
         if (transcend > 0) {
-          const flash = easeOutExpo(transcend) * (1 - smoothstep(5.72, 5.8, t));
+          const flash = easeOutExpo(transcend) * (1 - smoothstep(5.66, 5.8, t));
           const veil = ctx.createRadialGradient(cx, cy, 0, cx, cy, width * 0.86);
           veil.addColorStop(0, `rgba(222, 255, 255, ${flash * 0.34})`);
           veil.addColorStop(0.3, `rgba(196, 160, 255, ${flash * 0.24})`);
@@ -341,7 +344,7 @@
       }
 
       function drawVignetteAndStatus(t) {
-        const lock = smoothstep(5.05, 5.76, t);
+        const lock = smoothstep(5.0, 5.72, t);
         if (lock > 0) {
           statusEl.textContent = "WE ARE INSIDE THE DREAM";
           statusEl.style.opacity = String(lock * 0.9);
@@ -364,8 +367,10 @@
           return;
         }
 
-        const camX = Math.sin(t * 0.24) * 0.02;
-        const camY = Math.cos(t * 0.21 + Math.sin(t * 0.4)) * 0.018;
+        const inward = smoothstep(0.0, 1.9, t);
+        const destiny = smoothstep(4.6, 5.7, t);
+        const camX = Math.sin(t * 0.24) * (0.02 - inward * 0.004 + destiny * 0.003);
+        const camY = Math.cos(t * 0.21 + Math.sin(t * 0.4)) * (0.018 - inward * 0.003 + destiny * 0.003);
 
         ctx.clearRect(0, 0, width, height);
         drawBackground(t);
@@ -406,7 +411,7 @@
         cosmicFilter.Q.value = 0.8;
         const cosmicGain = audio.createGain();
         cosmicGain.gain.setValueAtTime(0.0001, now);
-        cosmicGain.gain.exponentialRampToValueAtTime(0.11, now + 1.4);
+        cosmicGain.gain.exponentialRampToValueAtTime(0.13, now + 1.1);
         cosmicGain.gain.linearRampToValueAtTime(0.05, now + DURATION);
         cosmic.connect(cosmicFilter).connect(cosmicGain).connect(master);
 
@@ -416,7 +421,7 @@
         sub.frequency.linearRampToValueAtTime(64, now + 5.2);
         const subGain = audio.createGain();
         subGain.gain.setValueAtTime(0.0001, now);
-        subGain.gain.exponentialRampToValueAtTime(0.2, now + 1.3);
+        subGain.gain.exponentialRampToValueAtTime(0.22, now + 1.05);
         subGain.gain.linearRampToValueAtTime(0.12, now + DURATION);
         sub.connect(subGain).connect(master);
 
@@ -436,19 +441,34 @@
           osc.stop(now + 5.76);
         });
 
-        for (let i = 0; i < 9; i++) {
+        for (let i = 0; i < 10; i++) {
           const ping = audio.createOscillator();
           ping.type = "sine";
-          const at = now + 1.2 + i * 0.42 + Math.random() * 0.06;
-          ping.frequency.setValueAtTime(620 + Math.random() * 1400, at);
-          ping.frequency.exponentialRampToValueAtTime(240 + Math.random() * 180, at + 0.16);
+          const at = now + 0.92 + i * 0.4;
+          ping.frequency.setValueAtTime(680 + i * 76, at);
+          ping.frequency.exponentialRampToValueAtTime(260 + i * 12, at + 0.16);
           const pg = audio.createGain();
           pg.gain.setValueAtTime(0.0001, at);
-          pg.gain.exponentialRampToValueAtTime(0.026, at + 0.02);
+          pg.gain.exponentialRampToValueAtTime(0.022 + i * 0.0015, at + 0.02);
           pg.gain.exponentialRampToValueAtTime(0.0001, at + 0.22);
           ping.connect(pg).connect(master);
           ping.start(at);
           ping.stop(at + 0.24);
+        }
+
+        for (let i = 0; i < 6; i++) {
+          const throb = audio.createOscillator();
+          throb.type = "triangle";
+          const at = now + 1.08 + i * 0.62;
+          throb.frequency.setValueAtTime(96 + i * 4, at);
+          throb.frequency.exponentialRampToValueAtTime(54 + i * 2, at + 0.21);
+          const tg = audio.createGain();
+          tg.gain.setValueAtTime(0.0001, at);
+          tg.gain.exponentialRampToValueAtTime(0.034 + i * 0.004, at + 0.04);
+          tg.gain.exponentialRampToValueAtTime(0.0001, at + 0.24);
+          throb.connect(tg).connect(master);
+          throb.start(at);
+          throb.stop(at + 0.3);
         }
 
         const bloom = audio.createOscillator();
@@ -457,7 +477,7 @@
         bloom.frequency.exponentialRampToValueAtTime(72, now + 5.54);
         const bloomGain = audio.createGain();
         bloomGain.gain.setValueAtTime(0.0001, now + 4.98);
-        bloomGain.gain.exponentialRampToValueAtTime(0.32, now + 5.08);
+        bloomGain.gain.exponentialRampToValueAtTime(0.37, now + 5.06);
         bloomGain.gain.exponentialRampToValueAtTime(0.0001, now + 5.74);
         bloom.connect(bloomGain).connect(master);
 
