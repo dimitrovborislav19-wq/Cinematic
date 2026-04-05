@@ -96,14 +96,15 @@ function drawParticles(t) {
 function drawRings(t) {
   const reveal = smoothstep(2, 3.2, t);
   const sync = smoothstep(3.2, 4.5, t);
-  const centerX = width * 0.5;
-  const centerY = height * 0.5;
+  const centerX = width * 0.5 + Math.sin(t * 0.8) * width * 0.005;
+  const centerY = height * 0.5 + Math.cos(t * 0.65) * height * 0.004;
+  const shapeReactivity = 0.9 + Math.sin(t * 2.2) * 0.06 + Math.cos(t * 1.35) * 0.04;
 
   for (let i = 0; i < 5; i++) {
-    const radius = width * (0.08 + i * 0.05 + Math.sin(t * 0.4 + i) * 0.005);
+    const radius = width * (0.08 + i * 0.05 + Math.sin(t * 0.4 + i) * 0.005) * shapeReactivity;
     ctx.save();
     ctx.translate(centerX, centerY);
-    ctx.rotate((t * 0.2 + i * 0.7) * (i % 2 === 0 ? 1 : -1));
+    ctx.rotate((t * 0.2 + i * 0.7 + Math.sin(t * 1.2 + i) * 0.14) * (i % 2 === 0 ? 1 : -1));
     ctx.strokeStyle = `rgba(${110 + i * 20},${180 - i * 8},255,${0.06 + reveal * 0.35})`;
     ctx.lineWidth = (i + 1) * 0.6;
     ctx.setLineDash([22 + i * 8, 14 + i * 4]);
@@ -117,25 +118,78 @@ function drawRings(t) {
 }
 
 function drawCore(t) {
-  const ignite = smoothstep(3.2, 4.5, t);
+  const wake = smoothstep(0.25, 1.25, t);
+  const ignite = smoothstep(2.2, 4.5, t);
   const lock = smoothstep(4.5, 5.9, t);
-  const cx = width * 0.5;
-  const cy = height * 0.5;
+  const pulse = 0.5 + Math.sin(t * 2.3) * 0.22 + Math.sin(t * 4.4 + 1.2) * 0.1;
+  const microX = Math.sin(t * 0.92) * width * 0.008 + Math.cos(t * 2.5) * width * 0.0015;
+  const microY = Math.cos(t * 0.74 + 0.9) * height * 0.006 + Math.sin(t * 2.1 + 0.4) * height * 0.0015;
+  const cx = width * 0.5 + microX;
+  const cy = height * 0.5 + microY;
 
-  const r = width * 0.028 + ignite * width * 0.022;
-  const glow = ctx.createRadialGradient(cx, cy, 0, cx, cy, r * 7.5);
-  glow.addColorStop(0, `rgba(150,240,255,${0.8 * ignite + lock * 0.2})`);
-  glow.addColorStop(0.3, `rgba(143,102,255,${0.4 * ignite + lock * 0.15})`);
+  const coreRadius = width * 0.055 * (0.84 + pulse * 0.2 + ignite * 0.16);
+  const shellRadius = coreRadius * (1.75 + Math.sin(t * 1.1) * 0.08);
+  const aperture = 0.3 + Math.sin(t * 1.7 + 0.4) * 0.25 + Math.cos(t * 2.6 + 1.3) * 0.15;
+  const split = smoothstep(1.2, 3.3, t) * (0.15 + Math.sin(t * 1.4 + 0.9) * 0.16);
+
+  const glow = ctx.createRadialGradient(cx, cy, 0, cx, cy, shellRadius * 2.8);
+  glow.addColorStop(0, `rgba(118,120,170,${0.13 + wake * 0.16})`);
+  glow.addColorStop(0.42, `rgba(52,58,92,${0.14 + ignite * 0.18})`);
   glow.addColorStop(1, "rgba(0,0,0,0)");
   ctx.fillStyle = glow;
   ctx.beginPath();
-  ctx.arc(cx, cy, r * 7.5, 0, Math.PI * 2);
+  ctx.arc(cx, cy, shellRadius * 2.8, 0, Math.PI * 2);
   ctx.fill();
 
-  ctx.fillStyle = `rgba(180,250,255,${ignite})`;
-  ctx.beginPath();
-  ctx.arc(cx, cy, r, 0, Math.PI * 2);
-  ctx.fill();
+  ctx.save();
+  ctx.translate(cx, cy);
+  ctx.rotate(Math.sin(t * 0.5) * 0.08 + Math.cos(t * 1.45) * 0.05);
+
+  const layers = 6;
+  for (let i = 0; i < layers; i++) {
+    const depth = i / (layers - 1);
+    const layerOpen = 1 + aperture * 0.06 + Math.sin(t * (1.7 + depth * 0.8) + i * 0.9) * 0.09;
+    const squash = 0.85 + Math.cos(t * (1.2 + depth * 1.3) + i) * 0.16;
+    const radius = coreRadius * (1.08 - depth * 0.55) * layerOpen;
+
+    ctx.beginPath();
+    const points = 22;
+    for (let j = 0; j <= points; j++) {
+      const a = (j / points) * Math.PI * 2;
+      const fold = Math.sin(a * (3 + i) + t * (1.2 + depth) + i * 0.7) * (0.16 + depth * 0.05);
+      const shard = Math.cos(a * (5 + i * 0.8) - t * (2.4 - depth * 0.6)) * (0.08 + depth * 0.02);
+      const px = Math.cos(a) * radius * (1 + fold + shard + split * Math.sign(Math.cos(a * 2 + i)));
+      const py = Math.sin(a) * radius * squash * (1 + fold * 0.5 - shard * 0.6);
+      if (j === 0) ctx.moveTo(px, py);
+      else ctx.lineTo(px, py);
+    }
+    ctx.closePath();
+    ctx.fillStyle = `rgba(${20 + i * 12},${26 + i * 10},${34 + i * 12},${0.5 - depth * 0.22 + wake * 0.1})`;
+    ctx.fill();
+    ctx.strokeStyle = `rgba(${80 + i * 15},${95 + i * 12},${125 + i * 10},${0.2 + wake * 0.2 - depth * 0.05})`;
+    ctx.lineWidth = 1.3 - depth * 0.7;
+    ctx.stroke();
+  }
+
+  const spokes = 10;
+  for (let i = 0; i < spokes; i++) {
+    const a = (i / spokes) * Math.PI * 2 + t * 0.37;
+    const extension = (0.35 + Math.sin(t * 2 + i * 1.6) * 0.5 + Math.cos(t * 1.1 - i) * 0.2) * smoothstep(0.4, 2.7, t);
+    const length = coreRadius * (1.15 + Math.max(0, extension));
+    const root = coreRadius * 0.44;
+    ctx.strokeStyle = `rgba(120,145,185,${0.06 + ignite * 0.13})`;
+    ctx.lineWidth = 1.1;
+    ctx.beginPath();
+    ctx.moveTo(Math.cos(a) * root, Math.sin(a) * root);
+    ctx.quadraticCurveTo(
+      Math.cos(a + Math.sin(t * 1.7 + i) * 0.4) * (length * 0.75),
+      Math.sin(a - Math.cos(t * 1.4 + i) * 0.4) * (length * 0.68),
+      Math.cos(a) * length,
+      Math.sin(a) * length
+    );
+    ctx.stroke();
+  }
+  ctx.restore();
 
   const scan = smoothstep(3.35, 4.1, t) * (1 - smoothstep(4.1, 4.55, t));
   if (scan > 0) {
@@ -152,18 +206,18 @@ function drawCore(t) {
 function drawFractalStructures(t) {
   const reveal = smoothstep(1.2, 3, t);
   const sync = smoothstep(3.2, 5.5, t);
-  const cx = width * 0.5;
-  const cy = height * 0.5;
+  const cx = width * 0.5 + Math.sin(t * 0.92) * width * 0.008;
+  const cy = height * 0.5 + Math.cos(t * 0.74 + 0.9) * height * 0.006;
 
   for (let i = 0; i < 3; i++) {
     const points = 6 + i * 2;
-    const radius = width * (0.09 + i * 0.06);
+    const radius = width * (0.09 + i * 0.06) * (0.95 + Math.sin(t * 1.8 + i) * 0.06);
     ctx.beginPath();
     for (let j = 0; j <= points; j++) {
-      const a = (j / points) * Math.PI * 2 + t * 0.15 * (i + 1);
-      const pulse = 1 + Math.sin(t * 1.4 + j + i * 2) * 0.1;
+      const a = (j / points) * Math.PI * 2 + t * 0.15 * (i + 1) + Math.cos(t * 0.9 + i + j * 0.3) * 0.08;
+      const pulse = 1 + Math.sin(t * 1.4 + j + i * 2) * 0.1 + Math.cos(t * 2.1 - j * 0.7) * 0.05;
       const x = cx + Math.cos(a) * radius * pulse;
-      const y = cy + Math.sin(a * 1.35) * radius * 0.5 * pulse;
+      const y = cy + Math.sin(a * 1.35 + Math.sin(t + i) * 0.18) * radius * 0.5 * pulse;
       if (j === 0) ctx.moveTo(x, y);
       else ctx.lineTo(x, y);
     }
