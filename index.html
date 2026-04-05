@@ -95,7 +95,7 @@
       const statusEl = document.getElementById("status");
       const startBtn = document.getElementById("startBtn");
 
-      const DURATION = 11.4;
+      const DURATION = 11.8;
       const STAR_COUNT = 320;
       const NODE_COUNT = 120;
       const PANEL_COUNT = 14;
@@ -117,6 +117,7 @@
         ["COMMAND LINK READY", false],
         ["SYSTEM AWAKE", false],
       ];
+      const PHASE_BEATS = [1.25, 2.9, 4.75, 7.15, 8.85, 10.35];
 
       let width = 0;
       let height = 0;
@@ -186,10 +187,10 @@
       }
 
       function drawBackground(t, l) {
-        const glow = l.init * 0.2 + l.scan * 0.45 + l.core * 0.65 + l.awake * 0.58;
+        const glow = l.init * 0.22 + l.scan * 0.52 + l.core * 0.84 + l.awake * 0.68;
         const g = ctx.createRadialGradient(width * 0.5, height * 0.54, 4, width * 0.5, height * 0.52, width * 0.95);
-        g.addColorStop(0, `rgba(${10 + glow * 28},${22 + glow * 46},${56 + glow * 92},0.95)`);
-        g.addColorStop(0.5, `rgba(${4 + l.ignite * 10},${11 + l.scan * 28},${26 + glow * 34},0.95)`);
+        g.addColorStop(0, `rgba(${10 + glow * 36},${20 + glow * 44},${56 + glow * 108},0.97)`);
+        g.addColorStop(0.5, `rgba(${4 + l.ignite * 8},${11 + l.scan * 24},${24 + glow * 32},0.95)`);
         g.addColorStop(1, "rgba(0,0,0,1)");
         ctx.fillStyle = g;
         ctx.fillRect(0, 0, width, height);
@@ -201,7 +202,7 @@
         ctx.fillStyle = haze;
         ctx.fillRect(0, 0, width, height);
 
-        const lineAlpha = 0.014 + l.scan * 0.032 + l.awake * 0.018;
+        const lineAlpha = 0.01 + l.scan * 0.024 + l.awake * 0.014;
         ctx.fillStyle = `rgba(140,208,255,${lineAlpha})`;
         for (let i = 0; i < 30; i++) {
           const y = ((i * 33 + t * 76) % (height + 120)) - 60;
@@ -228,10 +229,11 @@
       function drawOperationalGrid(t, l) {
         const active = l.init + l.scan + l.core + l.awake;
         if (active < 0.02) return;
+        const discipline = 1 - l.core * 0.42;
 
         ctx.save();
-        ctx.globalAlpha = 0.14 + active * 0.18;
-        ctx.strokeStyle = `rgba(90,190,255,${0.1 + active * 0.25})`;
+        ctx.globalAlpha = (0.12 + active * 0.14) * discipline;
+        ctx.strokeStyle = `rgba(90,190,255,${(0.08 + active * 0.18) * discipline})`;
         ctx.lineWidth = 1;
 
         const spacing = Math.max(24, Math.min(width, height) * 0.045);
@@ -256,7 +258,7 @@
           const y = height * (0.1 + f.y * 0.8);
           const w = width * f.w;
           const h = height * f.h;
-          ctx.fillStyle = `rgba(115,225,255,${(0.08 + active * 0.2) * ph})`;
+          ctx.fillStyle = `rgba(115,225,255,${(0.06 + active * 0.14) * ph * discipline})`;
           ctx.fillRect(x, y, w, h);
         }
         ctx.restore();
@@ -270,14 +272,14 @@
         const close = smooth(8.4, 10.3, t);
         const topY = lerp(height * 0.03, height * 0.22, aperture) - close * height * 0.08;
         const botY = lerp(height * 0.97, height * 0.78, aperture) + close * height * 0.08;
-        ctx.fillStyle = `rgba(2,8,22,${0.52 + p * 0.2})`;
+        ctx.fillStyle = `rgba(2,8,22,${0.62 + p * 0.2})`;
         ctx.fillRect(0, 0, width, topY);
         ctx.fillRect(0, botY, width, height - botY);
 
         for (const panel of panels) {
           const flow = 0.5 + 0.5 * Math.sin(t * (1.7 + panel.seed * 3.4) + panel.seed * 9);
           const online = clamp01(l.init * 0.6 + l.scan * 0.9 + l.awake * 1.1 - panel.seed * 0.35);
-          const x = width * (panel.side < 0 ? 0.03 : 0.97 - panel.w) + panel.side * Math.sin(t * 0.9 + panel.seed * 7) * width * 0.016;
+          const x = width * (panel.side < 0 ? 0.03 : 0.97 - panel.w) + panel.side * Math.sin(t * 0.62 + panel.seed * 7) * width * 0.01;
           const y = height * panel.y;
           const w = width * panel.w * (0.75 + flow * 0.35);
           const h = height * panel.h;
@@ -285,6 +287,41 @@
           ctx.fillRect(x, y, w, h);
           ctx.strokeStyle = `rgba(160,236,255,${0.06 + online * 0.26})`;
           ctx.strokeRect(x, y, w, h);
+        }
+      }
+
+      function drawPhaseTransitions(t, l) {
+        const cx = width * 0.5;
+        const cy = height * 0.52;
+        const unit = Math.min(width, height);
+        let beatStrength = 0;
+        for (const b of PHASE_BEATS) beatStrength += pulse(t, b - 0.2, b, b + 0.42);
+        beatStrength = clamp01(beatStrength);
+        if (beatStrength <= 0.01 && l.core < 0.08) return;
+
+        const convergence = pulse(t, 9.05, 9.95, 10.75);
+        const beamW = width * (0.05 + convergence * 0.12);
+        const beam = ctx.createLinearGradient(cx - beamW, 0, cx + beamW, 0);
+        beam.addColorStop(0, "rgba(0,0,0,0)");
+        beam.addColorStop(0.5, `rgba(170,230,255,${0.05 + convergence * 0.14 + beatStrength * 0.08})`);
+        beam.addColorStop(1, "rgba(0,0,0,0)");
+        ctx.fillStyle = beam;
+        ctx.fillRect(cx - beamW, height * 0.12, beamW * 2, height * 0.8);
+
+        const shock = pulse(t, 8.56, 8.86, 9.24) + pulse(t, 10.18, 10.36, 10.9) * 0.8;
+        if (shock > 0.01) {
+          ctx.globalCompositeOperation = "lighter";
+          ctx.strokeStyle = `rgba(255,96,104,${0.08 + shock * 0.45})`;
+          ctx.lineWidth = 2 + shock * 6;
+          ctx.beginPath();
+          ctx.arc(cx, cy, unit * (0.11 + shock * 0.2), 0, Math.PI * 2);
+          ctx.stroke();
+          ctx.globalCompositeOperation = "source-over";
+        }
+
+        if (beatStrength > 0.02) {
+          ctx.fillStyle = `rgba(210,242,255,${beatStrength * 0.08})`;
+          ctx.fillRect(0, 0, width, height);
         }
       }
 
@@ -336,6 +373,21 @@
         }
         ctx.stroke();
 
+        const lock = pulse(t, 7.95, 8.84, 9.75);
+        if (lock > 0.01) {
+          for (let i = 0; i < 4; i++) {
+            const a = Math.PI * 0.25 + i * (Math.PI * 0.5) + t * 0.08;
+            const r0 = outer * 0.34;
+            const r1 = outer * (0.75 + lock * 0.08);
+            ctx.strokeStyle = `rgba(215,245,255,${0.12 + lock * 0.46})`;
+            ctx.lineWidth = 1.4 + lock * 1.8;
+            ctx.beginPath();
+            ctx.moveTo(Math.cos(a) * r0, Math.sin(a) * r0);
+            ctx.lineTo(Math.cos(a) * r1, Math.sin(a) * r1);
+            ctx.stroke();
+          }
+        }
+
         // orbital node clusters and conduits
         ctx.globalCompositeOperation = "lighter";
         for (const n of nodes) {
@@ -379,6 +431,25 @@
           ctx.stroke();
         }
 
+        const route = smooth(3.4, 6.9, t) * (1 - smooth(9.1, 10.9, t));
+        if (route > 0.01) {
+          for (let i = 0; i < 6; i++) {
+            const a = (i / 6) * Math.PI * 2 + t * 0.1;
+            const ix = Math.cos(a) * outer * 0.24;
+            const iy = Math.sin(a) * outer * 0.2;
+            const ox = Math.cos(a) * outer * 0.7;
+            const oy = Math.sin(a) * outer * 0.58;
+            const midX = (ix + ox) * 0.5 + Math.sin(t * 0.9 + i) * outer * 0.03;
+            const midY = (iy + oy) * 0.5 + Math.cos(t * 0.8 + i) * outer * 0.03;
+            ctx.strokeStyle = `rgba(${120 + l.core * 70},${206 + l.scan * 40},255,${0.08 + route * 0.26})`;
+            ctx.lineWidth = 1.1;
+            ctx.beginPath();
+            ctx.moveTo(ix, iy);
+            ctx.quadraticCurveTo(midX, midY, ox, oy);
+            ctx.stroke();
+          }
+        }
+
         // inner iris
         const iris = unit * (0.025 + l.ignite * 0.03 + l.core * 0.07 + l.awake * 0.05);
         for (let i = 0; i < 10; i++) {
@@ -392,10 +463,10 @@
           ctx.stroke();
         }
 
-        const reactorPulse = 0.35 + 0.65 * Math.sin(t * (1.8 + l.core * 1.7));
+        const reactorPulse = 0.35 + 0.65 * Math.sin(t * (1.6 + l.core * 1.8));
         const heat = pulse(t, 7.2, 8.6, 10.2) + pulse(t, 9.8, 10.6, 11.4) * 0.6;
         const rg = ctx.createRadialGradient(0, 0, 0, 0, 0, iris * 8);
-        rg.addColorStop(0, `rgba(245,255,255,${0.6 + l.awake * 0.2})`);
+        rg.addColorStop(0, `rgba(245,255,255,${0.7 + l.awake * 0.22})`);
         rg.addColorStop(0.25, `rgba(${100 + heat * 120},${180 - heat * 30},255,${0.5 + l.core * 0.28})`);
         rg.addColorStop(0.6, `rgba(${65 + heat * 160},${90 + l.core * 40},${230 - heat * 70},${0.18 + l.core * 0.26})`);
         rg.addColorStop(1, "rgba(0,0,0,0)");
@@ -404,11 +475,20 @@
         ctx.arc(0, 0, iris * 8, 0, Math.PI * 2);
         ctx.fill();
 
-        ctx.strokeStyle = `rgba(206,246,255,${0.35 + l.core * 0.46})`;
-        ctx.lineWidth = Math.max(1.3, unit * 0.0024);
+        ctx.strokeStyle = `rgba(206,246,255,${0.4 + l.core * 0.52})`;
+        ctx.lineWidth = Math.max(1.4, unit * 0.0028);
         ctx.beginPath();
         ctx.arc(0, 0, iris * (2.5 + reactorPulse * 0.95), 0, Math.PI * 2);
         ctx.stroke();
+
+        const awakeBeat = 0.5 + 0.5 * Math.sin(t * 2.8 + Math.sin(t * 0.4));
+        if (l.awake > 0.1) {
+          ctx.strokeStyle = `rgba(170,236,255,${0.14 + l.awake * 0.2 + awakeBeat * 0.15})`;
+          ctx.lineWidth = 1 + l.awake * 1.5;
+          ctx.beginPath();
+          ctx.arc(0, 0, iris * (5.1 + awakeBeat * 0.38), 0, Math.PI * 2);
+          ctx.stroke();
+        }
 
         ctx.restore();
       }
@@ -418,7 +498,7 @@
         if (active < 0.02) return;
 
         // progress rails and moving bars
-        for (let i = 0; i < 3; i++) {
+        for (let i = 0; i < 2; i++) {
           const y = height * (0.2 + i * 0.06);
           const x = width * 0.1;
           const w = width * 0.28;
@@ -431,7 +511,7 @@
         }
 
         // waveform strips
-        for (let i = 0; i < 4; i++) {
+        for (let i = 0; i < 3; i++) {
           const y = height * (0.68 + i * 0.04);
           const x0 = width * 0.1;
           const w = width * 0.34;
@@ -461,7 +541,7 @@
         ctx.fillRect(sx, sy - 2, sw, 4 + l.scan * 2);
 
         // right-side subsystem online stack
-        for (let i = 0; i < 8; i++) {
+        for (let i = 0; i < 6; i++) {
           const online = clamp01((t - (5.2 + i * 0.48)) / 1.05);
           const x = width * 0.74;
           const y = height * (0.22 + i * 0.062);
@@ -470,7 +550,7 @@
           ctx.strokeRect(x, y, w, 10);
           ctx.fillStyle = `rgba(${110 + l.awake * 80}, ${190 + l.scan * 30}, 255, ${0.06 + online * 0.3})`;
           ctx.fillRect(x + 1, y + 1, (w - 2) * online, 8);
-          if (online > 0.98 && (i % 3 === 0 || l.awake > 0.5)) {
+          if (online > 0.98) {
             ctx.fillStyle = `rgba(170,248,255,${0.34 + l.awake * 0.2})`;
             ctx.fillRect(x + w + 8, y + 2, 6, 6);
           }
@@ -505,7 +585,7 @@
         drawCorner(x, y + h, 1, -1);
         drawCorner(x + w, y + h, -1, -1);
 
-        const reticle = pulse(t, 9.7, 10.4, 11.4);
+        const reticle = pulse(t, 9.6, 10.36, 11.7);
         if (reticle > 0.01) {
           const cx = width * 0.5;
           const cy = height * 0.52;
@@ -533,8 +613,8 @@
         const [label, alert] = LABELS[idx];
         statusEl.textContent = label;
         statusEl.classList.toggle("alert", !!alert || pulse(t, 7.6, 8.7, 9.7) > 0.45);
-        const show = clamp01(l.ignite * 0.8 + l.init + l.scan + l.core + l.awake);
-        statusEl.style.opacity = String(0.05 + show * 0.92);
+        const show = clamp01(l.ignite * 0.72 + l.init + l.scan + l.core + l.awake);
+        statusEl.style.opacity = String(0.04 + show * 0.94);
       }
 
       function render(now) {
@@ -555,6 +635,7 @@
         drawCentralSystems(t, l);
         drawDiagnostics(t, l);
         drawFrame(t, l);
+        drawPhaseTransitions(t, l);
         drawVignette(l);
         updateStatus(t, l);
 
@@ -567,7 +648,7 @@
 
         const audio = new AC();
         const master = audio.createGain();
-        master.gain.value = 0.23;
+        master.gain.value = 0.26;
         master.connect(audio.destination);
 
         const now = audio.currentTime;
@@ -575,25 +656,36 @@
 
         const hum = audio.createOscillator();
         hum.type = "sine";
-        hum.frequency.setValueAtTime(31, now);
-        hum.frequency.linearRampToValueAtTime(44, now + 3.2);
-        hum.frequency.linearRampToValueAtTime(58, now + 8.1);
-        hum.frequency.linearRampToValueAtTime(70, now + 11.2);
+        hum.frequency.setValueAtTime(29, now);
+        hum.frequency.linearRampToValueAtTime(40, now + 3.2);
+        hum.frequency.linearRampToValueAtTime(56, now + 8.1);
+        hum.frequency.linearRampToValueAtTime(67, now + 11.5);
         const humG = audio.createGain();
         humG.gain.setValueAtTime(0.0001, now);
-        humG.gain.exponentialRampToValueAtTime(0.33, now + 1.6);
-        humG.gain.linearRampToValueAtTime(0.25, end);
+        humG.gain.exponentialRampToValueAtTime(0.44, now + 1.55);
+        humG.gain.linearRampToValueAtTime(0.3, end);
         hum.connect(humG).connect(master);
+
+        const sub = audio.createOscillator();
+        sub.type = "sine";
+        sub.frequency.setValueAtTime(24, now);
+        sub.frequency.linearRampToValueAtTime(31, now + 8.8);
+        sub.frequency.linearRampToValueAtTime(34, now + 11.2);
+        const subG = audio.createGain();
+        subG.gain.setValueAtTime(0.0001, now);
+        subG.gain.exponentialRampToValueAtTime(0.4, now + 2.4);
+        subG.gain.linearRampToValueAtTime(0.33, end);
+        sub.connect(subG).connect(master);
 
         const bus = audio.createOscillator();
         bus.type = "triangle";
-        bus.frequency.setValueAtTime(88, now + 0.25);
-        bus.frequency.exponentialRampToValueAtTime(212, now + 6.1);
-        bus.frequency.exponentialRampToValueAtTime(304, now + 9.8);
+        bus.frequency.setValueAtTime(78, now + 0.25);
+        bus.frequency.exponentialRampToValueAtTime(196, now + 6.1);
+        bus.frequency.exponentialRampToValueAtTime(282, now + 9.8);
         const busG = audio.createGain();
         busG.gain.setValueAtTime(0.0001, now + 0.15);
-        busG.gain.exponentialRampToValueAtTime(0.14, now + 3.6);
-        busG.gain.linearRampToValueAtTime(0.12, end);
+        busG.gain.exponentialRampToValueAtTime(0.17, now + 3.6);
+        busG.gain.linearRampToValueAtTime(0.14, end);
         bus.connect(busG).connect(master);
 
         const tickBuffer = audio.createBuffer(1, Math.floor(audio.sampleRate * 0.045), audio.sampleRate);
@@ -620,25 +712,53 @@
           tick(tt, 0.02 + (i / 38) * 0.03, 860 + (i % 6) * 160, 7);
         }
 
+        for (const beat of PHASE_BEATS) {
+          tick(now + beat, 0.095, 660, 4.2);
+        }
+
         const growl = audio.createOscillator();
         growl.type = "sawtooth";
-        growl.frequency.setValueAtTime(210, now + 7.1);
-        growl.frequency.exponentialRampToValueAtTime(82, now + 9.9);
+        growl.frequency.setValueAtTime(196, now + 7.1);
+        growl.frequency.exponentialRampToValueAtTime(72, now + 9.9);
         const growlG = audio.createGain();
         growlG.gain.setValueAtTime(0.0001, now + 7.0);
-        growlG.gain.exponentialRampToValueAtTime(0.16, now + 7.8);
+        growlG.gain.exponentialRampToValueAtTime(0.24, now + 7.8);
         growlG.gain.exponentialRampToValueAtTime(0.0001, now + 10.2);
         growl.connect(growlG).connect(master);
 
+        const impact = audio.createOscillator();
+        impact.type = "triangle";
+        impact.frequency.setValueAtTime(150, now + 8.82);
+        impact.frequency.exponentialRampToValueAtTime(49, now + 9.38);
+        const impactG = audio.createGain();
+        impactG.gain.setValueAtTime(0.0001, now + 8.78);
+        impactG.gain.exponentialRampToValueAtTime(0.52, now + 8.9);
+        impactG.gain.exponentialRampToValueAtTime(0.0001, now + 9.6);
+        impact.connect(impactG).connect(master);
+
         const chime = audio.createOscillator();
-        chime.type = "triangle";
-        chime.frequency.setValueAtTime(520, now + 10.15);
-        chime.frequency.exponentialRampToValueAtTime(126, now + 10.95);
+        chime.type = "square";
+        chime.frequency.setValueAtTime(432, now + 10.15);
+        chime.frequency.exponentialRampToValueAtTime(118, now + 11.25);
         const chimeG = audio.createGain();
         chimeG.gain.setValueAtTime(0.0001, now + 10.1);
-        chimeG.gain.exponentialRampToValueAtTime(0.3, now + 10.3);
-        chimeG.gain.exponentialRampToValueAtTime(0.0001, now + 11.3);
+        chimeG.gain.exponentialRampToValueAtTime(0.36, now + 10.34);
+        chimeG.gain.exponentialRampToValueAtTime(0.0001, now + 11.45);
         chime.connect(chimeG).connect(master);
+
+        const authority = audio.createOscillator();
+        authority.type = "sawtooth";
+        authority.frequency.setValueAtTime(96, now + 10.32);
+        authority.frequency.linearRampToValueAtTime(82, now + 11.8);
+        const authFilter = audio.createBiquadFilter();
+        authFilter.type = "lowpass";
+        authFilter.frequency.setValueAtTime(820, now + 10.32);
+        authFilter.frequency.linearRampToValueAtTime(560, now + 11.8);
+        const authorityG = audio.createGain();
+        authorityG.gain.setValueAtTime(0.0001, now + 10.3);
+        authorityG.gain.exponentialRampToValueAtTime(0.19, now + 10.7);
+        authorityG.gain.linearRampToValueAtTime(0.12, end);
+        authority.connect(authFilter).connect(authorityG).connect(master);
 
         const tailNoise = audio.createBuffer(1, Math.floor(audio.sampleRate * 0.7), audio.sampleRate);
         const tailData = tailNoise.getChannelData(0);
@@ -657,15 +777,21 @@
         tailSrc.connect(lp).connect(tailG).connect(master);
 
         hum.start(now);
+        sub.start(now);
         bus.start(now + 0.2);
         growl.start(now + 7.0);
+        impact.start(now + 8.78);
         chime.start(now + 10.1);
+        authority.start(now + 10.3);
         tailSrc.start(now + 10.24);
 
         hum.stop(end);
+        sub.stop(end);
         bus.stop(end);
         growl.stop(now + 10.2);
-        chime.stop(now + 11.35);
+        impact.stop(now + 9.64);
+        chime.stop(now + 11.5);
+        authority.stop(end);
       }
 
       function begin() {
