@@ -483,28 +483,65 @@
         ctx.globalCompositeOperation = "lighter";
         ctx.save();
         ctx.translate(cx, cy);
-        ctx.rotate(t * 0.25 + eventB * 0.8);
+        ctx.rotate(t * 0.25 + eventB * 0.8 + eventA * 0.18);
 
         for (let i = 0; i < 4; i++) {
           const phase = t * (1.1 + i * 0.37);
           const squash = 0.2 + Math.sin(phase) * 0.7;
-          const r = ring * (1 + i * 0.22 + Math.sin(phase * 1.2) * 0.08);
-          ctx.strokeStyle = `hsla(${196 + i * 16 + eventB * 20}, 100%, ${68 + eventA * 20}%, ${0.08 + energy * 0.25})`;
+          const r = ring * (1 + i * 0.22 + Math.sin(phase * 1.2) * 0.08 + eventA * 0.05);
+          const hue = 196 + i * 14 + eventB * 18 + eventA * 8;
+          ctx.strokeStyle = `hsla(${hue}, 100%, ${66 + eventA * 22 + eventB * 8}%, ${0.05 + energy * 0.22})`;
           ctx.lineWidth = Math.max(1, width * 0.001 + energy * 1.5);
           ctx.beginPath();
           ctx.ellipse(0, 0, r, r * squash, Math.sin(phase * 0.5) * 2.4, 0, Math.PI * 2);
           ctx.stroke();
         }
+
+        const lattice = eventA + eventB * 0.75;
+        if (lattice > 0.01) {
+          const strands = 6;
+          for (let i = 0; i < strands; i++) {
+            const a = (i / strands) * Math.PI * 2 + t * (0.28 + eventB * 0.2);
+            const r0 = ring * (0.58 + Math.sin(t * 2.4 + i) * 0.08);
+            const r1 = ring * (1.82 + Math.cos(t * 2 + i * 0.7) * 0.09);
+            const x0 = Math.cos(a) * r0;
+            const y0 = Math.sin(a * (1.22 + eventA * 0.35)) * r0 * (0.36 + eventB * 0.12);
+            const x1 = Math.cos(a + Math.PI * (0.58 + eventA * 0.1)) * r1;
+            const y1 = Math.sin(a + Math.PI * 0.5) * r1 * (0.28 + eventB * 0.18);
+            ctx.strokeStyle = `hsla(${212 + i * 6 + eventB * 24}, 100%, ${70 + eventA * 18}%, ${0.02 + lattice * 0.2})`;
+            ctx.lineWidth = Math.max(0.8, width * 0.00055 + lattice * 1.2);
+            ctx.beginPath();
+            ctx.moveTo(x0, y0);
+            ctx.bezierCurveTo(x0 * 0.2, y1 * 0.3, x1 * 0.26, y0 * 0.36, x1, y1);
+            ctx.stroke();
+          }
+        }
         ctx.restore();
 
         const glare = ctx.createRadialGradient(cx, cy, 0, cx, cy, ring * 2.8);
-        glare.addColorStop(0, `rgba(236, 253, 255, ${0.08 + energy * 0.55})`);
-        glare.addColorStop(0.28, `rgba(148, 238, 255, ${0.04 + energy * 0.24})`);
+        glare.addColorStop(0, `rgba(244, 254, 255, ${0.06 + energy * 0.58})`);
+        glare.addColorStop(0.22, `rgba(155, 240, 255, ${0.04 + eventA * 0.22 + eventB * 0.14})`);
+        glare.addColorStop(0.44, `rgba(132, 182, 255, ${0.02 + eventB * 0.16})`);
         glare.addColorStop(1, "rgba(0,0,0,0)");
         ctx.fillStyle = glare;
         ctx.beginPath();
         ctx.arc(cx, cy, ring * 2.8, 0, Math.PI * 2);
         ctx.fill();
+
+        const slitA = smoothstep(5.9, 6.08, t) * (1 - smoothstep(6.08, 6.2, t));
+        const slitB = smoothstep(9.88, 10.0, t) * (1 - smoothstep(10.0, 10.14, t));
+        const slit = Math.max(slitA, slitB);
+        if (slit > 0.001) {
+          const y = cy + Math.sin(t * 14) * height * 0.004;
+          const lg = ctx.createLinearGradient(0, y, width, y);
+          lg.addColorStop(0, "rgba(0,0,0,0)");
+          lg.addColorStop(0.2, `rgba(136, 232, 255, ${0.06 + slit * 0.35})`);
+          lg.addColorStop(0.5, `rgba(244, 255, 255, ${0.12 + slit * 0.6})`);
+          lg.addColorStop(0.8, `rgba(136, 232, 255, ${0.06 + slit * 0.35})`);
+          lg.addColorStop(1, "rgba(0,0,0,0)");
+          ctx.fillStyle = lg;
+          ctx.fillRect(width * 0.08, y - Math.max(1, height * 0.0018), width * 0.84, Math.max(2, height * 0.0036));
+        }
         ctx.globalCompositeOperation = "source-over";
       }
 
@@ -698,15 +735,33 @@
           src.start(t0);
         }
 
+        const anomaly = audio.createOscillator();
+        anomaly.type = "triangle";
+        anomaly.frequency.setValueAtTime(980, now + 5.9);
+        anomaly.frequency.exponentialRampToValueAtTime(1960, now + 6.02);
+        anomaly.frequency.exponentialRampToValueAtTime(620, now + 6.2);
+        anomaly.frequency.setValueAtTime(1320, now + 9.9);
+        anomaly.frequency.exponentialRampToValueAtTime(760, now + 10.12);
+        const anomalyGain = audio.createGain();
+        anomalyGain.gain.setValueAtTime(0.0001, now + 5.86);
+        anomalyGain.gain.exponentialRampToValueAtTime(0.06, now + 5.98);
+        anomalyGain.gain.exponentialRampToValueAtTime(0.0001, now + 6.28);
+        anomalyGain.gain.setValueAtTime(0.0001, now + 9.84);
+        anomalyGain.gain.exponentialRampToValueAtTime(0.05, now + 9.98);
+        anomalyGain.gain.exponentialRampToValueAtTime(0.0001, now + 10.22);
+        anomaly.connect(anomalyGain).connect(master);
+
         sub.start(now);
         chord.start(now + 0.2);
         pull.start(now + 8.6);
         bloom.start(now + 5.65);
+        anomaly.start(now + 5.84);
 
         sub.stop(now + DURATION + 0.2);
         chord.stop(now + DURATION + 0.2);
         pull.stop(now + DURATION + 0.2);
         bloom.stop(now + DURATION + 0.2);
+        anomaly.stop(now + 10.3);
       }
 
       function begin() {
