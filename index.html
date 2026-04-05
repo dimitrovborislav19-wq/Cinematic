@@ -18,7 +18,7 @@
         height: 100%;
         margin: 0;
         overflow: hidden;
-        background: radial-gradient(circle at 50% 66%, #08122f 0%, #030712 46%, #000 100%);
+        background: radial-gradient(circle at 50% 66%, #040710 0%, #02040a 42%, #000 100%);
         color: var(--fg);
         font-family: "Inter", "Segoe UI", system-ui, sans-serif;
       }
@@ -27,7 +27,7 @@
         width: 100%;
         height: 100%;
         display: block;
-        filter: saturate(118%) contrast(112%);
+        filter: saturate(92%) contrast(116%);
       }
 
       .ui {
@@ -48,10 +48,10 @@
         text-transform: uppercase;
         font-size: clamp(0.52rem, 1.06vw, 0.9rem);
         opacity: 0;
-        color: rgba(214, 247, 255, 0.95);
-        border: 1px solid rgba(120, 216, 255, 0.24);
-        background: linear-gradient(90deg, rgba(6, 19, 44, 0.1), rgba(8, 26, 52, 0.3), rgba(6, 19, 44, 0.1));
-        text-shadow: 0 0 16px rgba(95, 220, 255, 0.62);
+        color: rgba(208, 236, 248, 0.9);
+        border: 1px solid rgba(84, 166, 204, 0.2);
+        background: linear-gradient(90deg, rgba(2, 9, 20, 0.18), rgba(4, 16, 32, 0.45), rgba(2, 9, 20, 0.18));
+        text-shadow: 0 0 16px rgba(66, 148, 189, 0.45);
       }
 
       #status.alert {
@@ -197,21 +197,21 @@
       function drawBackground(t, l) {
         const glow = l.init * 0.22 + l.scan * 0.52 + l.core * 0.84 + l.awake * 0.68;
         const g = ctx.createRadialGradient(width * 0.5, height * 0.54, 4, width * 0.5, height * 0.52, width * 0.95);
-        g.addColorStop(0, `rgba(${10 + glow * 36},${20 + glow * 44},${56 + glow * 108},0.97)`);
-        g.addColorStop(0.5, `rgba(${4 + l.ignite * 8},${11 + l.scan * 24},${24 + glow * 32},0.95)`);
+        g.addColorStop(0, `rgba(${4 + glow * 18},${9 + glow * 22},${20 + glow * 52},0.98)`);
+        g.addColorStop(0.5, `rgba(${2 + l.ignite * 4},${6 + l.scan * 14},${12 + glow * 18},0.97)`);
         g.addColorStop(1, "rgba(0,0,0,1)");
         ctx.fillStyle = g;
         ctx.fillRect(0, 0, width, height);
 
         const haze = ctx.createLinearGradient(0, 0, 0, height);
-        haze.addColorStop(0, `rgba(6,14,36,${0.17 + l.ignite * 0.2})`);
-        haze.addColorStop(0.52, `rgba(8,22,56,${0.1 + l.scan * 0.22 + l.core * 0.2})`);
-        haze.addColorStop(1, `rgba(0,0,0,${0.46 + l.awake * 0.24})`);
+        haze.addColorStop(0, `rgba(2,7,17,${0.26 + l.ignite * 0.16})`);
+        haze.addColorStop(0.52, `rgba(3,10,25,${0.2 + l.scan * 0.15 + l.core * 0.16})`);
+        haze.addColorStop(1, `rgba(0,0,0,${0.58 + l.awake * 0.2})`);
         ctx.fillStyle = haze;
         ctx.fillRect(0, 0, width, height);
 
         const lineAlpha = 0.01 + l.scan * 0.024 + l.awake * 0.014;
-        ctx.fillStyle = `rgba(140,208,255,${lineAlpha})`;
+        ctx.fillStyle = `rgba(84,146,196,${lineAlpha * 0.82})`;
         for (let i = 0; i < 30; i++) {
           const y = ((i * 33 + t * 76) % (height + 120)) - 60;
           ctx.fillRect(0, y, width, 1);
@@ -338,230 +338,200 @@
         const cy = height * 0.52;
         const unit = Math.min(width, height);
 
-        const morph = l.ignite * 0.18 + l.init * 0.35 + l.scan * 0.72 + l.core * 1 + l.awake * 0.85;
-        const outer = unit * (0.19 + l.init * 0.04 + l.core * 0.08 + l.awake * 0.04);
+        const morph = l.ignite * 0.26 + l.init * 0.58 + l.scan * 0.82 + l.core * 1.18 + l.awake * 1;
+        const outer = unit * (0.15 + l.init * 0.05 + l.core * 0.11 + l.awake * 0.07);
+        const unfold = smooth(2.2, 6.4, t);
+        const fracture = smooth(5.5, 9.6, t);
+        const reconf = smooth(8.0, 11.2, t);
+        const critical = pulse(t, 8.56, 8.86, 9.24) + pulse(t, 10.18, 10.36, 10.9) * 0.7;
 
         ctx.save();
         ctx.translate(cx, cy);
+        ctx.rotate(Math.sin(t * 0.22) * 0.08);
 
-        // static structural housing for stronger engineered depth
-        const housingSpin = t * 0.04;
-        for (let ring = 0; ring < 2; ring++) {
-          const radius = outer * (0.92 + ring * 0.17);
-          const sides = ring === 0 ? 8 : 12;
-          ctx.strokeStyle = `rgba(86,148,220,${0.08 + l.init * 0.1 + l.core * 0.18})`;
-          ctx.lineWidth = Math.max(1, unit * (0.0017 - ring * 0.0003));
+        const shadow = ctx.createRadialGradient(0, 0, 0, 0, 0, outer * (8.8 + l.core * 1.8));
+        shadow.addColorStop(0, `rgba(8,13,19,${0.6 + l.core * 0.2})`);
+        shadow.addColorStop(0.3, `rgba(6,10,14,${0.52 + morph * 0.16})`);
+        shadow.addColorStop(1, "rgba(0,0,0,0)");
+        ctx.fillStyle = shadow;
+        ctx.beginPath();
+        ctx.arc(0, 0, outer * (8.8 + l.core * 1.8), 0, Math.PI * 2);
+        ctx.fill();
+
+        // evolving dark mass layers with shifting facets (replaces simple circular reactor feel)
+        const layers = 7;
+        for (let layer = 0; layer < layers; layer++) {
+          const nodesCount = 7 + ((layer * 3) % 5);
+          const base = outer * (0.55 + layer * 0.22);
+          const spin = t * (0.16 + layer * 0.07) * (layer % 2 ? -1 : 1);
+          const fold = (Math.sin(t * (1.1 + layer * 0.24) + layer * 1.3) * 0.5 + 0.5) * (0.12 + unfold * 0.22);
+          const split = fracture * ((layer % 3 === 0 ? 1 : 0.62) * (0.2 + Math.sin(t * 0.6 + layer) * 0.08));
           ctx.beginPath();
-          for (let i = 0; i <= sides; i++) {
-            const a = housingSpin + (i / sides) * Math.PI * 2;
-            const x = Math.cos(a) * radius;
-            const y = Math.sin(a) * radius * 0.88;
+          for (let i = 0; i <= nodesCount; i++) {
+            const a = spin + (i / nodesCount) * Math.PI * 2;
+            const jitter = Math.sin(t * (2.1 + layer * 0.18) + i * 1.2 + layer * 2.4) * base * (0.07 + fold);
+            const spike = (i % 2 ? 1 : -1) * base * split;
+            const stretch = 1 + Math.sin(t * 0.9 + layer * 0.8) * 0.12 + reconf * 0.18;
+            const x = Math.cos(a) * (base + jitter + spike) * stretch;
+            const y = Math.sin(a) * (base * 0.74 + jitter * 0.6 - spike * 0.45);
             if (i === 0) ctx.moveTo(x, y);
             else ctx.lineTo(x, y);
           }
+          ctx.closePath();
+          ctx.fillStyle = `rgba(${10 + layer * 5},${14 + layer * 7},${20 + layer * 9},${0.2 + morph * 0.06})`;
+          ctx.strokeStyle = `rgba(${56 + layer * 10},${88 + l.scan * 36},${114 + l.core * 56},${0.05 + morph * 0.18})`;
+          ctx.lineWidth = Math.max(1, unit * (0.001 + layer * 0.00022));
+          ctx.fill();
           ctx.stroke();
         }
 
-        // radial braces and lock pins
-        const mechLock = smooth(7.7, 9.45, t);
-        for (let i = 0; i < 12; i++) {
-          const a = (i / 12) * Math.PI * 2 + t * 0.06;
-          const innerR = outer * (0.3 + (i % 3) * 0.03);
-          const outerR = outer * (0.88 + (i % 2) * 0.03);
-          ctx.strokeStyle = `rgba(92,170,242,${0.05 + l.scan * 0.13 + l.core * 0.2})`;
-          ctx.lineWidth = Math.max(0.9, unit * 0.0012);
+        // opening seams, folding rails, and lock traces emitted from the mass
+        const tendrilCount = 14;
+        for (let i = 0; i < tendrilCount; i++) {
+          const a = (i / tendrilCount) * Math.PI * 2 + t * 0.12;
+          const startR = outer * (0.9 + (i % 4) * 0.18);
+          const extension = outer * (1.3 + unfold * 1.2 + fracture * 1.4 + (i % 3) * 0.24);
+          const elbow = outer * (0.95 + Math.sin(t * 1.6 + i * 0.9) * 0.25);
+          const sx = Math.cos(a) * startR;
+          const sy = Math.sin(a) * startR * 0.82;
+          const mx = Math.cos(a + Math.sin(t * 1.2 + i) * 0.28) * elbow;
+          const my = Math.sin(a + Math.cos(t * 1.2 + i) * 0.2) * elbow * 0.86;
+          const ex = Math.cos(a) * extension;
+          const ey = Math.sin(a) * extension * (0.8 + Math.sin(t * 0.8 + i) * 0.12);
+
+          const active = clamp01(morph * 1.08 - i * 0.03);
+          if (active < 0.02) continue;
+          ctx.strokeStyle = `rgba(${58 + active * 64 + critical * 120},${98 + active * 74 - critical * 38},${126 + active * 92 - critical * 52},${0.05 + active * 0.22})`;
+          ctx.lineWidth = Math.max(0.9, unit * (0.0009 + (i % 4) * 0.0002));
           ctx.beginPath();
-          ctx.moveTo(Math.cos(a) * innerR, Math.sin(a) * innerR);
-          ctx.lineTo(Math.cos(a) * outerR, Math.sin(a) * outerR);
+          ctx.moveTo(sx, sy);
+          ctx.quadraticCurveTo(mx, my, ex, ey);
           ctx.stroke();
 
-          const px = Math.cos(a) * outerR;
-          const py = Math.sin(a) * outerR;
-          ctx.fillStyle = `rgba(${140 + mechLock * 110}, ${214 - mechLock * 120}, ${255 - mechLock * 110}, ${0.12 + l.core * 0.34})`;
-          ctx.fillRect(px - 1.5, py - 1.5, 3, 3);
-        }
+          const packet = (t * (1.4 + (i % 4) * 0.2) + i * 0.1) % 1;
+          const px = sx * (1 - packet) + ex * packet + Math.sin(packet * Math.PI) * (mx - (sx + ex) * 0.5);
+          const py = sy * (1 - packet) + ey * packet + Math.sin(packet * Math.PI) * (my - (sy + ey) * 0.5);
+          ctx.fillStyle = `rgba(120,206,255,${0.04 + active * 0.38})`;
+          ctx.beginPath();
+          ctx.arc(px, py, 1 + active * 1.6, 0, Math.PI * 2);
+          ctx.fill();
 
-        // segmented rings changing structure
-        const rings = 7;
-        for (let j = 0; j < rings; j++) {
-          const rr = outer * (0.28 + j * 0.13);
-          const seg = 5 + ((j * 3) % 8) + Math.floor(l.scan * 4) + Math.floor(l.core * 6);
-          const spin = t * (0.35 + j * 0.18) * (j % 2 ? -1 : 1);
-          for (let i = 0; i < seg; i++) {
-            const w = (Math.PI * 2) / seg;
-            const open = 0.34 + 0.48 * (0.5 + 0.5 * Math.sin(t * 1.6 + i * 0.9 + j));
-            const a0 = spin + i * w + w * 0.14;
-            const a1 = a0 + w * open;
-            const warn = pulse(t, 7.5, 8.7, 9.7) * (j === 2 || j === 4 ? 1 : 0.4);
-            ctx.strokeStyle = `rgba(${86 + warn * 140}, ${170 - warn * 70 + l.scan * 28}, 255, ${0.08 + morph * 0.2})`;
-            ctx.lineWidth = Math.max(1, unit * (0.001 + j * 0.00022));
-            ctx.beginPath();
-            ctx.arc(0, 0, rr, a0, a1);
-            ctx.stroke();
-
-            if (l.core > 0.1 && (i + j) % 2 === 0) {
-              const pinA = a1 + w * 0.04;
-              const pinR0 = rr - unit * 0.006;
-              const pinR1 = rr + unit * 0.01;
-              ctx.strokeStyle = `rgba(${130 + mechLock * 120}, ${205 - mechLock * 130}, ${255 - mechLock * 120}, ${0.08 + l.core * 0.35})`;
-              ctx.lineWidth = 1;
-              ctx.beginPath();
-              ctx.moveTo(Math.cos(pinA) * pinR0, Math.sin(pinA) * pinR0);
-              ctx.lineTo(Math.cos(pinA) * pinR1, Math.sin(pinA) * pinR1);
-              ctx.stroke();
-            }
+          // panel-like emitted shards that align/reconfigure around tips
+          if (active > 0.35 && i % 2 === 0) {
+            const shardW = unit * (0.018 + (i % 3) * 0.004);
+            const shardH = unit * 0.006;
+            const rot = a + Math.sin(t * 1.7 + i) * 0.5;
+            ctx.save();
+            ctx.translate(ex, ey);
+            ctx.rotate(rot);
+            ctx.fillStyle = `rgba(10,18,28,${0.24 + active * 0.28})`;
+            ctx.strokeStyle = `rgba(92,162,214,${0.07 + active * 0.22})`;
+            ctx.lineWidth = 1;
+            ctx.fillRect(-shardW * 0.5, -shardH * 0.5, shardW, shardH);
+            ctx.strokeRect(-shardW * 0.5, -shardH * 0.5, shardW, shardH);
+            ctx.restore();
           }
         }
 
-        // lock geometry transitions: triangle -> hex -> reticle
-        const geom = smooth(2.4, 4.8, t) + smooth(5.4, 8.2, t) + smooth(8.0, 10.5, t);
-        const polygonSides = t < 4.8 ? 3 : t < 8.2 ? 6 : 8;
-        const polyR = outer * (0.3 + l.scan * 0.08 + l.core * 0.15);
-        const rot = t * (0.9 + l.scan * 0.7) + (polygonSides === 3 ? Math.PI / 2 : 0);
-        ctx.strokeStyle = `rgba(140,225,255,${0.1 + geom * 0.36})`;
-        ctx.lineWidth = Math.max(1.2, unit * 0.002);
-        ctx.beginPath();
-        for (let i = 0; i <= polygonSides; i++) {
-          const a = rot + (i / polygonSides) * Math.PI * 2;
-          const x = Math.cos(a) * polyR;
-          const y = Math.sin(a) * polyR;
-          if (i === 0) ctx.moveTo(x, y);
-          else ctx.lineTo(x, y);
-        }
-        ctx.stroke();
-
-        const lock = pulse(t, 7.95, 8.84, 9.75);
-        if (lock > 0.01) {
-          for (let i = 0; i < 4; i++) {
-            const a = Math.PI * 0.25 + i * (Math.PI * 0.5) + t * 0.08;
-            const r0 = outer * 0.34;
-            const r1 = outer * (0.75 + lock * 0.08);
-            ctx.strokeStyle = `rgba(215,245,255,${0.12 + lock * 0.46})`;
-            ctx.lineWidth = 1.4 + lock * 1.8;
+        // orbital activation arcs around emitted structures
+        for (let i = 0; i < 6; i++) {
+          const sweep = clamp01(unfold + fracture * 0.8 - i * 0.11);
+          if (sweep < 0.05) continue;
+          const rr = outer * (1.8 + i * 0.34);
+          const span = Math.PI * (0.2 + sweep * 0.38);
+          const base = t * (0.35 + i * 0.1) * (i % 2 ? -1 : 1);
+          ctx.strokeStyle = `rgba(${84 + critical * 110},${146 + sweep * 56 - critical * 46},${196 + sweep * 48},${0.05 + sweep * 0.15})`;
+          ctx.lineWidth = Math.max(1, unit * 0.0012);
+          for (let seg = 0; seg < 3; seg++) {
+            const a0 = base + seg * (Math.PI * 0.66) + Math.sin(t * 0.9 + seg + i) * 0.18;
             ctx.beginPath();
-            ctx.moveTo(Math.cos(a) * r0, Math.sin(a) * r0);
-            ctx.lineTo(Math.cos(a) * r1, Math.sin(a) * r1);
+            ctx.arc(0, 0, rr, a0, a0 + span);
             ctx.stroke();
           }
         }
 
-        // orbital node clusters and conduits
+        // node cloud still exists but as controlled activation debris around dark core
         ctx.globalCompositeOperation = "lighter";
         for (const n of nodes) {
           const a = n.a + t * n.speed * (0.18 + l.scan * 0.75 + l.awake * 0.5);
-          const rr = outer * (0.28 + n.ring * 0.85 + Math.sin(t * 1.1 + n.seed * 5) * 0.02);
+          const rr = outer * (1.05 + n.ring * 1.2 + Math.sin(t * 1.1 + n.seed * 5) * 0.07);
           const nx = Math.cos(a) * rr;
-          const ny = Math.sin(a) * rr * (0.86 + Math.sin(t * 0.7 + n.seed * 4) * 0.14);
-          const online = clamp01(l.init * 0.5 + l.scan + l.core * 1.3 + l.awake * 1.5 - n.seed * 0.3);
-          ctx.fillStyle = `rgba(${118 + l.awake * 70}, ${200 + l.scan * 45}, 255, ${(0.1 + online * 0.5) * (0.2 + n.seed * 0.65)})`;
+          const ny = Math.sin(a * (1.02 + n.seed * 0.08)) * rr * (0.78 + Math.sin(t * 0.7 + n.seed * 4) * 0.1);
+          const online = clamp01(l.init * 0.5 + l.scan + l.core * 1.3 + l.awake * 1.5 - n.seed * 0.42);
+          ctx.fillStyle = `rgba(${102 + l.awake * 66}, ${168 + l.scan * 40}, ${228 + l.core * 20}, ${(0.05 + online * 0.32) * (0.16 + n.seed * 0.5)})`;
           ctx.beginPath();
           ctx.arc(nx, ny, 1 + unit * 0.0018 + n.seed * 1.2, 0, Math.PI * 2);
           ctx.fill();
 
-          if (n.seed > 0.66 && l.scan > 0.15) {
-            ctx.strokeStyle = `rgba(125,214,255,${0.08 + l.scan * 0.2 + l.awake * 0.12})`;
+          if (n.seed > 0.72 && l.scan > 0.15) {
+            ctx.strokeStyle = `rgba(90,172,226,${0.04 + l.scan * 0.15 + l.awake * 0.1})`;
             ctx.lineWidth = Math.max(0.8, unit * 0.00085);
             ctx.beginPath();
-            ctx.moveTo(nx * 0.55, ny * 0.55);
+            ctx.moveTo(nx * 0.4, ny * 0.4);
             ctx.lineTo(nx, ny);
             ctx.stroke();
           }
         }
         ctx.globalCompositeOperation = "source-over";
 
-        // reactor shells opening and aligning
-        const shellA = smooth(6.9, 8.3, t);
-        const shellB = smooth(7.8, 9.3, t);
-        for (let i = 0; i < 6; i++) {
-          const a = t * 0.24 + (i / 6) * Math.PI * 2;
-          const openBias = i % 2 ? shellA : shellB;
-          const base = outer * (0.21 + (i % 3) * 0.052);
-          const opening = unit * (0.013 + openBias * 0.085);
-          const lateral = unit * 0.016;
-          const sx = Math.cos(a) * base;
-          const sy = Math.sin(a) * base;
-          const nx = Math.cos(a + Math.PI / 2) * lateral;
-          const ny = Math.sin(a + Math.PI / 2) * lateral;
-          const dx = Math.cos(a) * opening;
-          const dy = Math.sin(a) * opening;
-
-          ctx.fillStyle = `rgba(9,24,51,${0.24 + l.scan * 0.16 + l.core * 0.2})`;
-          ctx.strokeStyle = `rgba(${112 + l.core * 122}, ${166 - mechLock * 76}, 255, ${0.12 + l.core * 0.34})`;
-          ctx.lineWidth = Math.max(1.1, unit * 0.0016);
-          ctx.beginPath();
-          ctx.moveTo(sx - nx - dx, sy - ny - dy);
-          ctx.lineTo(sx + nx - dx, sy + ny - dy);
-          ctx.lineTo(sx + nx + dx, sy + ny + dy);
-          ctx.lineTo(sx - nx + dx, sy - ny + dy);
-          ctx.closePath();
-          ctx.fill();
-          ctx.stroke();
+        // scanning arcs and framing geometry pushed outward from the reconfiguring mass
+        const frameOpen = smooth(3.3, 7.2, t);
+        for (let i = 0; i < 4; i++) {
+          const side = i % 2 ? 1 : -1;
+          const top = i < 2 ? -1 : 1;
+          const drift = Math.sin(t * 0.7 + i) * outer * 0.08;
+          const fx = side * outer * (2.55 + frameOpen * 1.25) + drift;
+          const fy = top * outer * (1.46 + frameOpen * 0.68) - drift * 0.5;
+          const fw = outer * (0.72 + frameOpen * 0.54);
+          const fh = outer * 0.11;
+          ctx.save();
+          ctx.translate(fx, fy);
+          ctx.rotate(top * side * 0.22 + Math.sin(t * 1.2 + i) * 0.1);
+          ctx.fillStyle = `rgba(8,16,26,${0.2 + frameOpen * 0.16})`;
+          ctx.strokeStyle = `rgba(82,154,204,${0.05 + frameOpen * 0.18})`;
+          ctx.lineWidth = 1;
+          ctx.fillRect(-fw * 0.5, -fh * 0.5, fw, fh);
+          ctx.strokeRect(-fw * 0.5, -fh * 0.5, fw, fh);
+          ctx.restore();
         }
 
-        const route = smooth(3.4, 6.9, t) * (1 - smooth(9.1, 10.9, t));
-        if (route > 0.01) {
-          for (let i = 0; i < 8; i++) {
-            const a = (i / 8) * Math.PI * 2 + t * 0.1;
-            const ix = Math.cos(a) * outer * 0.24;
-            const iy = Math.sin(a) * outer * 0.2;
-            const ox = Math.cos(a) * outer * 0.7;
-            const oy = Math.sin(a) * outer * 0.58;
-            const midX = (ix + ox) * 0.5 + Math.sin(t * 0.9 + i) * outer * 0.03;
-            const midY = (iy + oy) * 0.5 + Math.cos(t * 0.8 + i) * outer * 0.03;
-            ctx.strokeStyle = `rgba(${120 + l.core * 70},${206 + l.scan * 40},255,${0.08 + route * 0.26})`;
-            ctx.lineWidth = 1.1;
-            ctx.beginPath();
-            ctx.moveTo(ix, iy);
-            ctx.quadraticCurveTo(midX, midY, ox, oy);
-            ctx.stroke();
-
-            const packet = (t * 1.5 + i * 0.19) % 1;
-            const px = ix * (1 - packet) + ox * packet + Math.sin(packet * Math.PI) * (midX - (ix + ox) * 0.5);
-            const py = iy * (1 - packet) + oy * packet + Math.sin(packet * Math.PI) * (midY - (iy + oy) * 0.5);
-            ctx.fillStyle = `rgba(182,236,255,${0.12 + route * 0.55})`;
-            ctx.beginPath();
-            ctx.arc(px, py, 1.4 + l.core * 1.4, 0, Math.PI * 2);
-            ctx.fill();
-          }
-        }
-
-        // inner iris
-        const iris = unit * (0.025 + l.ignite * 0.03 + l.core * 0.07 + l.awake * 0.05);
-        for (let i = 0; i < 10; i++) {
-          const a = t * 1.4 + (i / 10) * Math.PI * 2;
-          const f = 0.3 + 0.7 * Math.sin(t * 2.1 + i);
-          ctx.strokeStyle = `rgba(${90 + l.core * 150}, ${160 + l.scan * 50}, 255, ${(0.08 + l.core * 0.3) * f})`;
-          ctx.lineWidth = Math.max(1, unit * 0.0012);
-          ctx.beginPath();
-          ctx.moveTo(Math.cos(a) * iris * 0.35, Math.sin(a) * iris * 0.35);
-          ctx.lineTo(Math.cos(a) * iris * (1 + f * 1.2), Math.sin(a) * iris * (1 + f * 1.2));
-          ctx.stroke();
-        }
-
-        const reactorPulse = 0.35 + 0.65 * Math.sin(t * (1.6 + l.core * 1.8));
-        const heat = pulse(t, 7.2, 8.6, 10.2) + pulse(t, 9.8, 10.6, 11.4) * 0.6;
-        const rg = ctx.createRadialGradient(0, 0, 0, 0, 0, iris * 8);
-        rg.addColorStop(0, `rgba(245,255,255,${0.7 + l.awake * 0.22})`);
-        rg.addColorStop(0.25, `rgba(${100 + heat * 120},${180 - heat * 30},255,${0.5 + l.core * 0.28})`);
-        rg.addColorStop(0.6, `rgba(${65 + heat * 160},${90 + l.core * 40},${230 - heat * 70},${0.18 + l.core * 0.26})`);
-        rg.addColorStop(1, "rgba(0,0,0,0)");
-        ctx.fillStyle = rg;
+        // central intelligence node remains dark, with controlled cyan accents only
+        const coreR = unit * (0.024 + l.ignite * 0.03 + l.core * 0.05 + l.awake * 0.036);
+        const nodeGlow = ctx.createRadialGradient(0, 0, 0, 0, 0, coreR * 7);
+        nodeGlow.addColorStop(0, `rgba(30,44,58,${0.68 + l.awake * 0.12})`);
+        nodeGlow.addColorStop(0.32, `rgba(${52 + critical * 130},${92 + l.scan * 55 - critical * 26},${128 + l.core * 90 - critical * 46},${0.18 + l.core * 0.24})`);
+        nodeGlow.addColorStop(1, "rgba(0,0,0,0)");
+        ctx.fillStyle = nodeGlow;
         ctx.beginPath();
-        ctx.arc(0, 0, iris * 8, 0, Math.PI * 2);
+        ctx.arc(0, 0, coreR * 7, 0, Math.PI * 2);
         ctx.fill();
 
-        ctx.strokeStyle = `rgba(206,246,255,${0.4 + l.core * 0.52})`;
-        ctx.lineWidth = Math.max(1.4, unit * 0.0028);
+        const facetCount = 12;
+        for (let i = 0; i < facetCount; i++) {
+          const a = t * 1.1 + (i / facetCount) * Math.PI * 2;
+          const f = 0.35 + 0.65 * Math.sin(t * 2.3 + i * 0.9);
+          const r0 = coreR * (0.2 + (i % 3) * 0.15);
+          const r1 = coreR * (0.8 + f * 1.2 + reconf * 0.8);
+          ctx.strokeStyle = `rgba(${70 + critical * 160}, ${122 + l.scan * 40 - critical * 42}, ${158 + l.core * 80 - critical * 62}, ${0.06 + l.core * 0.24})`;
+          ctx.lineWidth = Math.max(1, unit * 0.0011);
+          ctx.beginPath();
+          ctx.moveTo(Math.cos(a) * r0, Math.sin(a) * r0);
+          ctx.lineTo(Math.cos(a) * r1, Math.sin(a) * r1);
+          ctx.stroke();
+        }
+
+        ctx.strokeStyle = `rgba(124,198,240,${0.14 + l.core * 0.34})`;
+        ctx.lineWidth = Math.max(1.2, unit * 0.0019);
         ctx.beginPath();
-        ctx.arc(0, 0, iris * (2.5 + reactorPulse * 0.95), 0, Math.PI * 2);
+        ctx.arc(0, 0, coreR * (2.2 + 0.4 * Math.sin(t * 2.1)), 0, Math.PI * 2);
         ctx.stroke();
 
         const awakeBeat = 0.5 + 0.5 * Math.sin(t * 2.8 + Math.sin(t * 0.4));
         if (l.awake > 0.1) {
-          ctx.strokeStyle = `rgba(170,236,255,${0.14 + l.awake * 0.2 + awakeBeat * 0.15})`;
-          ctx.lineWidth = 1 + l.awake * 1.5;
+          ctx.strokeStyle = `rgba(${106 + critical * 120},${182 + l.awake * 26 - critical * 45},${236 - critical * 72},${0.08 + l.awake * 0.16 + awakeBeat * 0.08})`;
+          ctx.lineWidth = 1 + l.awake * 1.1;
           ctx.beginPath();
-          ctx.arc(0, 0, iris * (5.1 + awakeBeat * 0.38), 0, Math.PI * 2);
+          ctx.arc(0, 0, coreR * (4.7 + awakeBeat * 0.5), 0, Math.PI * 2);
           ctx.stroke();
         }
 
