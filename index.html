@@ -95,27 +95,22 @@
       const statusEl = document.getElementById("status");
       const startBtn = document.getElementById("startBtn");
 
-      const DURATION = 11.8;
+      const DURATION = 16.4;
       const STAR_COUNT = 320;
       const NODE_COUNT = 120;
       const PANEL_COUNT = 14;
       const GRID_FRAGS = 36;
-      const LABELS = [
-        ["DORMANT FIELD", false],
-        ["INITIALIZING", false],
-        ["POWER ROUTING", false],
-        ["SIGNAL ACQUISITION", false],
-        ["CORE CALIBRATION", false],
-        ["VECTOR ALIGNMENT", false],
-        ["SENSOR SWEEP", false],
-        ["SYNAPTIC MAP LOADING", false],
-        ["TARGET GEOMETRY LOCK", true],
-        ["SUBSYSTEM LINK", false],
-        ["NEURAL BUS ONLINE", false],
-        ["AUTHORITY LAYER ACTIVE", true],
-        ["PRIMARY CORE ONLINE", false],
-        ["COMMAND LINK READY", false],
-        ["SYSTEM AWAKE", false],
+      const SCENES = [
+        { start: 0.0, end: 1.8, label: "DORMANT SYSTEM", alert: false },
+        { start: 1.6, end: 3.0, label: "FIRST SIGNAL", alert: false },
+        { start: 2.8, end: 4.8, label: "GRID FORMING", alert: false },
+        { start: 4.5, end: 6.7, label: "CORE BOOT SEQUENCE", alert: false },
+        { start: 6.5, end: 8.1, label: "RETINA / IDENTITY SCAN", alert: true },
+        { start: 7.8, end: 10.0, label: "DIAGNOSTIC PANELS", alert: false },
+        { start: 9.7, end: 11.9, label: "EXPANDED SYSTEM VIEW", alert: false },
+        { start: 11.6, end: 13.3, label: "GLOBAL AWARENESS", alert: true },
+        { start: 13.0, end: 14.7, label: "COLLAPSE TO CORE", alert: false },
+        { start: 14.5, end: 16.4, label: "COMMAND CORE READY", alert: false },
       ];
       const LOADING_SUBTASKS = [
         "CALIBRATING",
@@ -125,7 +120,7 @@
         "SIGNAL LOCK",
         "INITIALIZING SUBSYSTEMS",
       ];
-      const PHASE_BEATS = [1.25, 2.9, 4.75, 7.15, 8.85, 10.35];
+      const PHASE_BEATS = [1.8, 3.2, 5.0, 7.3, 9.6, 12.2, 13.8, 15.3];
 
       let width = 0;
       let height = 0;
@@ -146,13 +141,33 @@
       }
 
       function stageLevels(t) {
+        const dormant = stage(t, 0.0, 2.1);
+        const signal = stage(t, 1.5, 3.2);
+        const grid = stage(t, 2.8, 5.0);
+        const boot = stage(t, 4.5, 6.9);
+        const retina = stage(t, 6.4, 8.4);
+        const diagnostics = stage(t, 7.9, 10.2);
+        const expand = stage(t, 9.8, 12.1);
+        const global = stage(t, 11.6, 13.5);
+        const collapse = stage(t, 12.9, 14.9);
+        const ready = stage(t, 14.4, 16.4);
         return {
-          dormant: stage(t, 0.0, 2.0),
-          ignite: stage(t, 1.2, 3.2),
-          init: stage(t, 2.6, 5.2),
-          scan: stage(t, 4.6, 7.7),
-          core: stage(t, 7.1, 9.9),
-          awake: stage(t, 9.5, 11.4),
+          dormant,
+          signal,
+          grid,
+          boot,
+          retina,
+          diagnostics,
+          expand,
+          global,
+          collapse,
+          ready,
+          // compatibility layers used by existing render passes
+          ignite: signal,
+          init: grid + boot * 0.35,
+          scan: retina + diagnostics * 0.6,
+          core: boot + collapse * 0.4 + ready * 0.85,
+          awake: ready + expand * 0.45 + global * 0.3,
         };
       }
 
@@ -769,6 +784,68 @@
         }
       }
 
+      function drawGlobalAwareness(t, l) {
+        const presence = l.global + l.collapse * 0.8;
+        if (presence < 0.02) return;
+
+        const cx = width * 0.5;
+        const cy = height * 0.52;
+        const unit = Math.min(width, height);
+        const radius = unit * (0.17 + l.global * 0.11 - l.collapse * 0.08);
+
+        ctx.save();
+        ctx.translate(cx, cy);
+        ctx.globalCompositeOperation = "lighter";
+
+        ctx.strokeStyle = `rgba(128,228,255,${0.1 + presence * 0.3})`;
+        ctx.lineWidth = 1.2;
+        for (let i = 0; i < 6; i++) {
+          const lat = -0.75 + i * 0.3;
+          const ry = radius * Math.cos(lat);
+          const y = radius * Math.sin(lat) * 0.5;
+          ctx.beginPath();
+          ctx.ellipse(0, y, Math.max(6, ry), Math.max(2, ry * 0.24), 0, 0, Math.PI * 2);
+          ctx.stroke();
+        }
+
+        for (let i = 0; i < 8; i++) {
+          const a = t * 0.2 + (i / 8) * Math.PI;
+          ctx.beginPath();
+          ctx.ellipse(0, 0, radius * Math.cos(a), radius * 0.54, a, -Math.PI * 0.38, Math.PI * 0.38);
+          ctx.stroke();
+        }
+
+        for (let i = 0; i < 18; i++) {
+          const a = t * 0.42 + i * 0.34;
+          const x = Math.cos(a) * radius * (0.4 + (i % 5) * 0.12);
+          const y = Math.sin(a * 1.3) * radius * 0.34;
+          const red = i % 7 === 0 ? 1 : 0;
+          ctx.fillStyle = red
+            ? `rgba(255,86,96,${0.14 + l.global * 0.55})`
+            : `rgba(150,244,255,${0.14 + presence * 0.26})`;
+          ctx.beginPath();
+          ctx.arc(x, y, red ? 3 : 2, 0, Math.PI * 2);
+          ctx.fill();
+        }
+
+        for (let i = 0; i < 10; i++) {
+          const a0 = t * 0.36 + i * 0.61;
+          const a1 = a0 + 0.85 + Math.sin(t * 0.8 + i) * 0.26;
+          const x0 = Math.cos(a0) * radius * 0.88;
+          const y0 = Math.sin(a0 * 1.2) * radius * 0.45;
+          const x1 = Math.cos(a1) * radius * 0.92;
+          const y1 = Math.sin(a1 * 1.2) * radius * 0.45;
+          ctx.strokeStyle = `rgba(106,224,255,${0.06 + presence * 0.25})`;
+          ctx.beginPath();
+          ctx.moveTo(x0, y0);
+          ctx.lineTo(x1, y1);
+          ctx.stroke();
+        }
+
+        ctx.globalCompositeOperation = "source-over";
+        ctx.restore();
+      }
+
       function drawVignette(l) {
         const g = ctx.createRadialGradient(width * 0.5, height * 0.5, width * 0.2, width * 0.5, height * 0.5, width * 0.84);
         g.addColorStop(0, "rgba(0,0,0,0)");
@@ -778,12 +855,11 @@
       }
 
       function updateStatus(t, l) {
-        const idx = Math.min(LABELS.length - 1, Math.floor((t / DURATION) * LABELS.length));
-        const [label, alert] = LABELS[idx];
-        statusEl.textContent = label;
-        statusEl.classList.toggle("alert", !!alert || pulse(t, 7.6, 8.7, 9.7) > 0.45);
-        const show = clamp01(l.ignite * 0.72 + l.init + l.scan + l.core + l.awake);
-        statusEl.style.opacity = String(0.04 + show * 0.94);
+        const scene = SCENES.find((s) => t >= s.start && t < s.end) || SCENES[SCENES.length - 1];
+        statusEl.textContent = scene.label;
+        statusEl.classList.toggle("alert", !!scene.alert || l.retina > 0.4 || l.global > 0.4);
+        const show = clamp01(l.signal * 0.6 + l.grid + l.boot + l.retina + l.diagnostics + l.expand + l.global + l.collapse + l.ready);
+        statusEl.style.opacity = String(0.05 + show * 0.95);
       }
 
       function render(now) {
@@ -802,6 +878,7 @@
         drawOperationalGrid(t, l);
         drawShuttersAndPanels(t, l);
         drawCentralSystems(t, l);
+        drawGlobalAwareness(t, l);
         drawLoadingLayer(t, l);
         drawDiagnostics(t, l);
         drawFrame(t, l);
@@ -982,7 +1059,7 @@
       startBtn.addEventListener("click", begin);
       resize();
       drawBackground(0, stageLevels(0));
-      statusEl.textContent = "DORMANT FIELD";
+      statusEl.textContent = "DORMANT SYSTEM";
       statusEl.style.opacity = "0.32";
     </script>
   </body>
