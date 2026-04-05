@@ -117,6 +117,14 @@
         ["COMMAND LINK READY", false],
         ["SYSTEM AWAKE", false],
       ];
+      const LOADING_SUBTASKS = [
+        "CALIBRATING",
+        "SYNCHRONIZING",
+        "ROUTING POWER",
+        "CORE LINK",
+        "SIGNAL LOCK",
+        "INITIALIZING SUBSYSTEMS",
+      ];
       const PHASE_BEATS = [1.25, 2.9, 4.75, 7.15, 8.85, 10.35];
 
       let width = 0;
@@ -336,6 +344,43 @@
         ctx.save();
         ctx.translate(cx, cy);
 
+        // static structural housing for stronger engineered depth
+        const housingSpin = t * 0.04;
+        for (let ring = 0; ring < 2; ring++) {
+          const radius = outer * (0.92 + ring * 0.17);
+          const sides = ring === 0 ? 8 : 12;
+          ctx.strokeStyle = `rgba(86,148,220,${0.08 + l.init * 0.1 + l.core * 0.18})`;
+          ctx.lineWidth = Math.max(1, unit * (0.0017 - ring * 0.0003));
+          ctx.beginPath();
+          for (let i = 0; i <= sides; i++) {
+            const a = housingSpin + (i / sides) * Math.PI * 2;
+            const x = Math.cos(a) * radius;
+            const y = Math.sin(a) * radius * 0.88;
+            if (i === 0) ctx.moveTo(x, y);
+            else ctx.lineTo(x, y);
+          }
+          ctx.stroke();
+        }
+
+        // radial braces and lock pins
+        const mechLock = smooth(7.7, 9.45, t);
+        for (let i = 0; i < 12; i++) {
+          const a = (i / 12) * Math.PI * 2 + t * 0.06;
+          const innerR = outer * (0.3 + (i % 3) * 0.03);
+          const outerR = outer * (0.88 + (i % 2) * 0.03);
+          ctx.strokeStyle = `rgba(92,170,242,${0.05 + l.scan * 0.13 + l.core * 0.2})`;
+          ctx.lineWidth = Math.max(0.9, unit * 0.0012);
+          ctx.beginPath();
+          ctx.moveTo(Math.cos(a) * innerR, Math.sin(a) * innerR);
+          ctx.lineTo(Math.cos(a) * outerR, Math.sin(a) * outerR);
+          ctx.stroke();
+
+          const px = Math.cos(a) * outerR;
+          const py = Math.sin(a) * outerR;
+          ctx.fillStyle = `rgba(${140 + mechLock * 110}, ${214 - mechLock * 120}, ${255 - mechLock * 110}, ${0.12 + l.core * 0.34})`;
+          ctx.fillRect(px - 1.5, py - 1.5, 3, 3);
+        }
+
         // segmented rings changing structure
         const rings = 7;
         for (let j = 0; j < rings; j++) {
@@ -353,6 +398,18 @@
             ctx.beginPath();
             ctx.arc(0, 0, rr, a0, a1);
             ctx.stroke();
+
+            if (l.core > 0.1 && (i + j) % 2 === 0) {
+              const pinA = a1 + w * 0.04;
+              const pinR0 = rr - unit * 0.006;
+              const pinR1 = rr + unit * 0.01;
+              ctx.strokeStyle = `rgba(${130 + mechLock * 120}, ${205 - mechLock * 130}, ${255 - mechLock * 120}, ${0.08 + l.core * 0.35})`;
+              ctx.lineWidth = 1;
+              ctx.beginPath();
+              ctx.moveTo(Math.cos(pinA) * pinR0, Math.sin(pinA) * pinR0);
+              ctx.lineTo(Math.cos(pinA) * pinR1, Math.sin(pinA) * pinR1);
+              ctx.stroke();
+            }
           }
         }
 
@@ -415,26 +472,36 @@
         // reactor shells opening and aligning
         const shellA = smooth(6.9, 8.3, t);
         const shellB = smooth(7.8, 9.3, t);
-        for (let i = 0; i < 4; i++) {
-          const a = t * 0.4 + (i / 4) * Math.PI * 2;
-          const opening = unit * (0.02 + shellA * 0.11 + shellB * 0.08);
-          const base = outer * (0.15 + i * 0.07);
-          const x = Math.cos(a) * base;
-          const y = Math.sin(a) * base;
+        for (let i = 0; i < 6; i++) {
+          const a = t * 0.24 + (i / 6) * Math.PI * 2;
+          const openBias = i % 2 ? shellA : shellB;
+          const base = outer * (0.21 + (i % 3) * 0.052);
+          const opening = unit * (0.013 + openBias * 0.085);
+          const lateral = unit * 0.016;
+          const sx = Math.cos(a) * base;
+          const sy = Math.sin(a) * base;
+          const nx = Math.cos(a + Math.PI / 2) * lateral;
+          const ny = Math.sin(a + Math.PI / 2) * lateral;
           const dx = Math.cos(a) * opening;
           const dy = Math.sin(a) * opening;
-          ctx.strokeStyle = `rgba(${120 + l.core * 120}, ${168 - l.core * 50}, 255, ${0.12 + l.core * 0.34})`;
-          ctx.lineWidth = Math.max(1.2, unit * 0.0018);
+
+          ctx.fillStyle = `rgba(9,24,51,${0.24 + l.scan * 0.16 + l.core * 0.2})`;
+          ctx.strokeStyle = `rgba(${112 + l.core * 122}, ${166 - mechLock * 76}, 255, ${0.12 + l.core * 0.34})`;
+          ctx.lineWidth = Math.max(1.1, unit * 0.0016);
           ctx.beginPath();
-          ctx.moveTo(x - dx, y - dy);
-          ctx.lineTo(x + dx, y + dy);
+          ctx.moveTo(sx - nx - dx, sy - ny - dy);
+          ctx.lineTo(sx + nx - dx, sy + ny - dy);
+          ctx.lineTo(sx + nx + dx, sy + ny + dy);
+          ctx.lineTo(sx - nx + dx, sy - ny + dy);
+          ctx.closePath();
+          ctx.fill();
           ctx.stroke();
         }
 
         const route = smooth(3.4, 6.9, t) * (1 - smooth(9.1, 10.9, t));
         if (route > 0.01) {
-          for (let i = 0; i < 6; i++) {
-            const a = (i / 6) * Math.PI * 2 + t * 0.1;
+          for (let i = 0; i < 8; i++) {
+            const a = (i / 8) * Math.PI * 2 + t * 0.1;
             const ix = Math.cos(a) * outer * 0.24;
             const iy = Math.sin(a) * outer * 0.2;
             const ox = Math.cos(a) * outer * 0.7;
@@ -447,6 +514,14 @@
             ctx.moveTo(ix, iy);
             ctx.quadraticCurveTo(midX, midY, ox, oy);
             ctx.stroke();
+
+            const packet = (t * 1.5 + i * 0.19) % 1;
+            const px = ix * (1 - packet) + ox * packet + Math.sin(packet * Math.PI) * (midX - (ix + ox) * 0.5);
+            const py = iy * (1 - packet) + oy * packet + Math.sin(packet * Math.PI) * (midY - (iy + oy) * 0.5);
+            ctx.fillStyle = `rgba(182,236,255,${0.12 + route * 0.55})`;
+            ctx.beginPath();
+            ctx.arc(px, py, 1.4 + l.core * 1.4, 0, Math.PI * 2);
+            ctx.fill();
           }
         }
 
@@ -491,6 +566,130 @@
         }
 
         ctx.restore();
+      }
+
+      function drawLoadingLayer(t, l) {
+        const loadingActive = smooth(2.0, 3.1, t) * (1 - smooth(8.55, 9.85, t));
+        if (loadingActive < 0.01) return;
+
+        const cx = width * 0.5;
+        const cy = height * 0.19;
+        const unit = Math.min(width, height);
+        const panelW = Math.min(width * 0.52, 620);
+        const panelH = Math.max(70, height * 0.14);
+        const x = cx - panelW / 2;
+        const y = cy - panelH / 2;
+
+        ctx.save();
+        ctx.globalAlpha = loadingActive;
+        ctx.fillStyle = `rgba(5,15,38,${0.3 + l.init * 0.22 + l.scan * 0.16})`;
+        ctx.fillRect(x, y, panelW, panelH);
+        ctx.strokeStyle = `rgba(110,198,255,${0.14 + l.scan * 0.3})`;
+        ctx.lineWidth = 1;
+        ctx.strokeRect(x, y, panelW, panelH);
+
+        // corner reticle hints
+        ctx.strokeStyle = `rgba(186,234,255,${0.18 + l.scan * 0.24})`;
+        ctx.lineWidth = 1.3;
+        const c = 16;
+        const corner = (px, py, sx, sy) => {
+          ctx.beginPath();
+          ctx.moveTo(px, py + sy * c);
+          ctx.lineTo(px, py);
+          ctx.lineTo(px + sx * c, py);
+          ctx.stroke();
+        };
+        corner(x, y, 1, 1);
+        corner(x + panelW, y, -1, 1);
+        corner(x, y + panelH, 1, -1);
+        corner(x + panelW, y + panelH, -1, -1);
+
+        // LOADING label and subtask
+        ctx.fillStyle = `rgba(217,247,255,${0.9})`;
+        ctx.font = `${Math.max(16, unit * 0.03)}px Inter, Segoe UI, sans-serif`;
+        ctx.textAlign = "center";
+        ctx.letterSpacing = "2px";
+        ctx.fillText("LOADING", cx, y + panelH * 0.44);
+
+        const taskIndex = Math.floor((t * 1.65) % LOADING_SUBTASKS.length);
+        ctx.fillStyle = `rgba(140,208,255,${0.65})`;
+        ctx.font = `${Math.max(9, unit * 0.012)}px Inter, Segoe UI, sans-serif`;
+        ctx.fillText(LOADING_SUBTASKS[taskIndex], cx, y + panelH * 0.74);
+
+        // segmented arcs and rotating ticks
+        ctx.translate(cx, y + panelH * 0.42);
+        for (let j = 0; j < 2; j++) {
+          const rr = unit * (0.062 + j * 0.016);
+          const spin = t * (j ? -0.9 : 1.2);
+          for (let i = 0; i < 12; i++) {
+            const a0 = spin + (i / 12) * Math.PI * 2;
+            const a1 = a0 + Math.PI * 0.09;
+            ctx.strokeStyle = `rgba(126,214,255,${0.08 + ((i + j) % 3 === 0 ? 0.23 : 0.12)})`;
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.arc(0, 0, rr, a0, a1);
+            ctx.stroke();
+          }
+        }
+
+        for (let i = 0; i < 18; i++) {
+          const a = t * 1.7 + (i / 18) * Math.PI * 2;
+          const r0 = unit * 0.034;
+          const r1 = unit * 0.042 + (i % 3 === 0 ? unit * 0.007 : 0);
+          ctx.strokeStyle = `rgba(202,244,255,${0.1 + (i % 4 === 0 ? 0.26 : 0.12)})`;
+          ctx.beginPath();
+          ctx.moveTo(Math.cos(a) * r0, Math.sin(a) * r0);
+          ctx.lineTo(Math.cos(a) * r1, Math.sin(a) * r1);
+          ctx.stroke();
+        }
+
+        // orbiting markers, pulse dots, and scan dashes
+        for (let i = 0; i < 6; i++) {
+          const a = -t * 1.45 + (i / 6) * Math.PI * 2;
+          const rr = unit * 0.054 + Math.sin(t * 1.8 + i) * unit * 0.004;
+          const xDot = Math.cos(a) * rr;
+          const yDot = Math.sin(a) * rr;
+          ctx.fillStyle = `rgba(168,236,255,${0.24 + 0.35 * (0.5 + 0.5 * Math.sin(t * 3 + i))})`;
+          ctx.beginPath();
+          ctx.arc(xDot, yDot, 1.8, 0, Math.PI * 2);
+          ctx.fill();
+        }
+
+        ctx.restore();
+
+        // rails, calibration bars, waveform fragment and dashes
+        const progress = clamp01((t - 2.25) / 6.2);
+        const railY = y + panelH - 12;
+        ctx.strokeStyle = `rgba(90,182,255,${0.26})`;
+        ctx.strokeRect(x + 14, railY, panelW - 28, 6);
+        ctx.fillStyle = `rgba(148,224,255,${0.45})`;
+        ctx.fillRect(x + 15, railY + 1, (panelW - 30) * progress, 4);
+
+        for (let i = 0; i < 10; i++) {
+          const barH = 4 + Math.sin(t * 4 + i * 0.7) * 3 + l.scan * 8;
+          const bx = x + 18 + i * 8;
+          ctx.fillStyle = `rgba(122,208,255,${0.14 + i * 0.015})`;
+          ctx.fillRect(bx, y + 12 + (10 - barH), 2, barH);
+        }
+
+        ctx.strokeStyle = `rgba(120,202,255,${0.3})`;
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        for (let i = 0; i <= 46; i++) {
+          const k = i / 46;
+          const wx = x + panelW - 170 + k * 150;
+          const wy = y + 19 + Math.sin(k * 20 + t * 4.1) * 3 + Math.sin(k * 48 - t * 2.6) * 1.2;
+          if (i === 0) ctx.moveTo(wx, wy);
+          else ctx.lineTo(wx, wy);
+        }
+        ctx.stroke();
+
+        for (let i = 0; i < 9; i++) {
+          const dx = x + 36 + i * (panelW - 72) / 8 + Math.sin(t * 2.2 + i) * 4;
+          const dy = y + panelH * 0.57;
+          ctx.fillStyle = `rgba(162,228,255,${0.12 + 0.22 * (0.5 + 0.5 * Math.sin(t * 6 + i))})`;
+          ctx.fillRect(dx, dy, 10, 1.6);
+        }
       }
 
       function drawDiagnostics(t, l) {
@@ -633,6 +832,7 @@
         drawOperationalGrid(t, l);
         drawShuttersAndPanels(t, l);
         drawCentralSystems(t, l);
+        drawLoadingLayer(t, l);
         drawDiagnostics(t, l);
         drawFrame(t, l);
         drawPhaseTransitions(t, l);
@@ -714,6 +914,11 @@
 
         for (const beat of PHASE_BEATS) {
           tick(now + beat, 0.095, 660, 4.2);
+        }
+
+        for (let i = 0; i < 16; i++) {
+          const tLoad = now + 2.2 + i * 0.31;
+          tick(tLoad, 0.024 + (i % 4) * 0.006, 1220 + (i % 5) * 115, 9);
         }
 
         const growl = audio.createOscillator();
