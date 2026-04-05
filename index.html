@@ -3,11 +3,11 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>System Awakening Sequence</title>
+    <title>System Awakening Montage</title>
     <style>
       :root {
-        --bg: #03050e;
-        --fg: #d2f4ff;
+        --bg: #03060d;
+        --fg: #d6f4ff;
       }
 
       * { box-sizing: border-box; }
@@ -18,7 +18,7 @@
         height: 100%;
         margin: 0;
         overflow: hidden;
-        background: radial-gradient(circle at 50% 66%, #040710 0%, #02040a 42%, #000 100%);
+        background: radial-gradient(circle at 50% 70%, #07111e 0%, #03070f 44%, #000 100%);
         color: var(--fg);
         font-family: "Inter", "Segoe UI", system-ui, sans-serif;
       }
@@ -27,7 +27,7 @@
         width: 100%;
         height: 100%;
         display: block;
-        filter: saturate(92%) contrast(116%);
+        filter: saturate(94%) contrast(114%);
       }
 
       .ui {
@@ -39,25 +39,25 @@
       #status {
         position: absolute;
         left: 50%;
-        bottom: clamp(1.2rem, 4vh, 2.3rem);
+        bottom: clamp(1.2rem, 3.8vh, 2.1rem);
         transform: translateX(-50%);
-        min-width: min(90vw, 42rem);
+        min-width: min(88vw, 44rem);
         text-align: center;
-        padding: 0.42rem 0.8rem;
-        letter-spacing: 0.23em;
+        padding: 0.44rem 0.9rem;
+        letter-spacing: 0.22em;
         text-transform: uppercase;
-        font-size: clamp(0.52rem, 1.06vw, 0.9rem);
+        font-size: clamp(0.5rem, 1vw, 0.86rem);
         opacity: 0;
-        color: rgba(208, 236, 248, 0.9);
-        border: 1px solid rgba(84, 166, 204, 0.2);
-        background: linear-gradient(90deg, rgba(2, 9, 20, 0.18), rgba(4, 16, 32, 0.45), rgba(2, 9, 20, 0.18));
-        text-shadow: 0 0 16px rgba(66, 148, 189, 0.45);
+        color: rgba(212, 242, 251, 0.94);
+        border: 1px solid rgba(71, 150, 188, 0.26);
+        background: linear-gradient(90deg, rgba(2, 9, 18, 0.2), rgba(4, 16, 28, 0.54), rgba(2, 9, 18, 0.2));
+        text-shadow: 0 0 16px rgba(60, 142, 184, 0.42);
       }
 
       #status.alert {
-        border-color: rgba(255, 80, 90, 0.48);
-        color: rgba(255, 202, 202, 0.98);
-        text-shadow: 0 0 18px rgba(255, 72, 72, 0.68);
+        border-color: rgba(255, 80, 90, 0.46);
+        color: rgba(255, 210, 210, 0.98);
+        text-shadow: 0 0 18px rgba(255, 80, 80, 0.62);
       }
 
       #startBtn {
@@ -69,7 +69,7 @@
         color: rgba(214, 247, 255, 0.92);
         background: rgba(2, 8, 20, 0.62);
         border-radius: 999px;
-        padding: 0.68rem 0.98rem;
+        padding: 0.68rem 1rem;
         text-transform: uppercase;
         letter-spacing: 0.12em;
         font-size: 0.68rem;
@@ -95,32 +95,55 @@
       const statusEl = document.getElementById("status");
       const startBtn = document.getElementById("startBtn");
 
-      const DURATION = 16.4;
-      const STAR_COUNT = 320;
-      const NODE_COUNT = 120;
-      const PANEL_COUNT = 14;
-      const GRID_FRAGS = 36;
+      const DURATION = 18;
+      const STARS = 280;
+      const TRACES = 52;
+      const HEXES = 40;
+      const NODES = 90;
+
       const SCENES = [
-        { start: 0.0, end: 1.8, label: "DORMANT SYSTEM", alert: false },
-        { start: 1.6, end: 3.0, label: "FIRST SIGNAL", alert: false },
-        { start: 2.8, end: 4.8, label: "GRID FORMING", alert: false },
-        { start: 4.5, end: 6.7, label: "CORE BOOT SEQUENCE", alert: false },
-        { start: 6.5, end: 8.1, label: "RETINA / IDENTITY SCAN", alert: true },
-        { start: 7.8, end: 10.0, label: "DIAGNOSTIC PANELS", alert: false },
-        { start: 9.7, end: 11.9, label: "EXPANDED SYSTEM VIEW", alert: false },
-        { start: 11.6, end: 13.3, label: "GLOBAL AWARENESS", alert: true },
-        { start: 13.0, end: 14.7, label: "COLLAPSE TO CORE", alert: false },
-        { start: 14.5, end: 16.4, label: "COMMAND CORE READY", alert: false },
+        { key: "dormant", start: 0.0, end: 2.1, label: "DORMANT SYSTEM FIELD" },
+        { key: "bridgeA", start: 1.8, end: 3.0, label: "SIGNAL ROUTING" },
+        { key: "retina", start: 2.8, end: 4.9, label: "RETINA SCAN", alert: true },
+        { key: "bridgeB", start: 4.5, end: 5.7, label: "DEVICE LINK" },
+        { key: "loading", start: 5.4, end: 7.9, label: "LOADING / CALIBRATION" },
+        { key: "bridgeC", start: 7.6, end: 8.7, label: "CIRCUIT TRANSFER" },
+        { key: "command", start: 8.5, end: 11.1, label: "COMMAND CORE" },
+        { key: "bridgeD", start: 10.8, end: 12.0, label: "GEOMETRY SHIFT" },
+        { key: "global", start: 11.8, end: 14.9, label: "GLOBAL AWARENESS" },
+        { key: "bridgeE", start: 14.5, end: 15.6, label: "NETWORK LOCK" },
+        { key: "ready", start: 15.2, end: 18.0, label: "SYSTEM READY" },
       ];
-      const LOADING_SUBTASKS = [
-        "CALIBRATING",
-        "SYNCHRONIZING",
-        "ROUTING POWER",
-        "CORE LINK",
-        "SIGNAL LOCK",
-        "INITIALIZING SUBSYSTEMS",
-      ];
-      const PHASE_BEATS = [1.8, 3.2, 5.0, 7.3, 9.6, 12.2, 13.8, 15.3];
+
+      const LOADING_WORDS = ["DEVICE LINK", "CALIBRATION", "SIGNAL ROUTING", "COMMAND PREP", "NETWORK LOCK"];
+
+      const stars = Array.from({ length: STARS }, () => ({
+        x: Math.random(),
+        y: Math.random(),
+        z: Math.random(),
+        tw: Math.random() * 10,
+      }));
+
+      const traces = Array.from({ length: TRACES }, () => ({
+        x: Math.random(),
+        y: Math.random(),
+        len: 0.12 + Math.random() * 0.22,
+        s: 0.2 + Math.random() * 1.6,
+        o: Math.random() * Math.PI * 2,
+      }));
+
+      const hexes = Array.from({ length: HEXES }, () => ({
+        x: 0.1 + Math.random() * 0.8,
+        y: 0.14 + Math.random() * 0.72,
+        r: 12 + Math.random() * 24,
+        p: Math.random() * 4,
+      }));
+
+      const nodes = Array.from({ length: NODES }, () => ({
+        a: Math.random() * Math.PI * 2,
+        r: 0.2 + Math.random() * 0.8,
+        s: 0.3 + Math.random() * 1.4,
+      }));
 
       let width = 0;
       let height = 0;
@@ -129,77 +152,17 @@
       let startTime = 0;
 
       const clamp01 = (v) => Math.max(0, Math.min(1, v));
-      const lerp = (a, b, t) => a + (b - a) * t;
       const smooth = (a, b, x) => {
         const t = clamp01((x - a) / (b - a));
         return t * t * (3 - 2 * t);
       };
-      const pulse = (t, s, p, e) => smooth(s, p, t) * (1 - smooth(p, e, t));
+      const phase = (t, s, e, p = 0.32) => smooth(s - p, s + p, t) * (1 - smooth(e - p, e + p, t));
 
-      function stage(t, s, e, padIn = 0.45, padOut = 0.45) {
-        return smooth(s - padIn, s + padIn, t) * (1 - smooth(e - padOut, e + padOut, t));
+      function sceneLevels(t) {
+        const out = {};
+        for (const s of SCENES) out[s.key] = phase(t, s.start, s.end);
+        return out;
       }
-
-      function stageLevels(t) {
-        const dormant = stage(t, 0.0, 2.1);
-        const signal = stage(t, 1.5, 3.2);
-        const grid = stage(t, 2.8, 5.0);
-        const boot = stage(t, 4.5, 6.9);
-        const retina = stage(t, 6.4, 8.4);
-        const diagnostics = stage(t, 7.9, 10.2);
-        const expand = stage(t, 9.8, 12.1);
-        const global = stage(t, 11.6, 13.5);
-        const collapse = stage(t, 12.9, 14.9);
-        const ready = stage(t, 14.4, 16.4);
-        return {
-          dormant,
-          signal,
-          grid,
-          boot,
-          retina,
-          diagnostics,
-          expand,
-          global,
-          collapse,
-          ready,
-          // compatibility layers used by existing render passes
-          ignite: signal,
-          init: grid + boot * 0.35,
-          scan: retina + diagnostics * 0.6,
-          core: boot + collapse * 0.4 + ready * 0.85,
-          awake: ready + expand * 0.45 + global * 0.3,
-        };
-      }
-
-      const stars = Array.from({ length: STAR_COUNT }, () => ({
-        a: Math.random() * Math.PI * 2,
-        r: 0.08 + Math.random() * 0.96,
-        z: Math.random(),
-        tw: Math.random() * 20,
-      }));
-
-      const nodes = Array.from({ length: NODE_COUNT }, (_, i) => ({
-        ring: 0.2 + (i % 11) / 13 + Math.random() * 0.06,
-        a: (i / NODE_COUNT) * Math.PI * 2 + Math.random() * 0.15,
-        speed: 0.25 + Math.random() * 1.3,
-        seed: Math.random(),
-      }));
-
-      const panels = Array.from({ length: PANEL_COUNT }, (_, i) => ({
-        side: i % 2 ? 1 : -1,
-        y: 0.16 + (i / PANEL_COUNT) * 0.68,
-        w: 0.08 + Math.random() * 0.12,
-        h: 0.02 + Math.random() * 0.038,
-        seed: Math.random(),
-      }));
-
-      const fragments = Array.from({ length: GRID_FRAGS }, () => ({
-        x: Math.random(),
-        y: Math.random(),
-        w: 0.04 + Math.random() * 0.07,
-        h: 0.02 + Math.random() * 0.06,
-        phase: Math.random() * 6,
-      }));
 
       function resize() {
         const dpr = Math.min(window.devicePixelRatio || 1, 2);
@@ -209,58 +172,39 @@
         canvas.style.height = `${window.innerHeight}px`;
       }
 
-      function drawBackground(t, l) {
-        const glow = l.init * 0.22 + l.scan * 0.52 + l.core * 0.84 + l.awake * 0.68;
-        const g = ctx.createRadialGradient(width * 0.5, height * 0.54, 4, width * 0.5, height * 0.52, width * 0.95);
-        g.addColorStop(0, `rgba(${4 + glow * 18},${9 + glow * 22},${20 + glow * 52},0.98)`);
-        g.addColorStop(0.5, `rgba(${2 + l.ignite * 4},${6 + l.scan * 14},${12 + glow * 18},0.97)`);
+      function drawBase(t, l) {
+        const energy = l.retina * 0.35 + l.loading * 0.42 + l.command * 0.62 + l.global * 0.72 + l.ready * 0.8;
+        const g = ctx.createRadialGradient(width * 0.5, height * 0.56, width * 0.04, width * 0.5, height * 0.52, width * 0.9);
+        g.addColorStop(0, `rgba(${8 + energy * 22}, ${16 + energy * 28}, ${26 + energy * 38}, 0.95)`);
+        g.addColorStop(0.54, `rgba(${2 + energy * 6}, ${8 + energy * 16}, ${15 + energy * 20}, 0.98)`);
         g.addColorStop(1, "rgba(0,0,0,1)");
         ctx.fillStyle = g;
         ctx.fillRect(0, 0, width, height);
 
         const haze = ctx.createLinearGradient(0, 0, 0, height);
-        haze.addColorStop(0, `rgba(2,7,17,${0.26 + l.ignite * 0.16})`);
-        haze.addColorStop(0.52, `rgba(3,10,25,${0.2 + l.scan * 0.15 + l.core * 0.16})`);
-        haze.addColorStop(1, `rgba(0,0,0,${0.58 + l.awake * 0.2})`);
+        haze.addColorStop(0, `rgba(2,9,18,${0.35 + energy * 0.2})`);
+        haze.addColorStop(0.5, `rgba(2,7,14,${0.25 + energy * 0.12})`);
+        haze.addColorStop(1, "rgba(0,0,0,0.74)");
         ctx.fillStyle = haze;
         ctx.fillRect(0, 0, width, height);
 
-        const lineAlpha = 0.01 + l.scan * 0.024 + l.awake * 0.014;
-        ctx.fillStyle = `rgba(84,146,196,${lineAlpha * 0.82})`;
-        for (let i = 0; i < 30; i++) {
-          const y = ((i * 33 + t * 76) % (height + 120)) - 60;
-          ctx.fillRect(0, y, width, 1);
-        }
-      }
-
-      function drawDormantField(t, l) {
-        const amount = 0.14 + l.ignite * 0.3 + l.init * 0.4 + l.scan * 0.6;
-        ctx.globalCompositeOperation = "lighter";
         for (const s of stars) {
-          const a = s.a + t * (0.04 + s.z * 0.24);
-          const radius = Math.min(width, height) * (0.1 + s.r * 0.6);
-          const x = width * 0.5 + Math.cos(a) * radius * (1 + s.z * 0.2);
-          const y = height * 0.52 + Math.sin(a * (1.1 + s.z * 0.3) + s.tw) * radius * 0.62;
-          const tw = 0.4 + 0.6 * Math.sin(t * 2 + s.tw);
-          const alpha = amount * tw * (0.16 + s.z * 0.4);
-          ctx.fillStyle = `rgba(${150 + l.awake * 70}, ${200 + l.core * 55}, 255, ${alpha})`;
-          ctx.fillRect(x, y, 1 + s.z * 1.8, 1 + s.z * 1.8);
+          const x = width * s.x + Math.sin(t * 0.1 + s.tw) * 8;
+          const y = height * s.y + Math.cos(t * 0.08 + s.tw) * 6;
+          const a = (0.04 + s.z * 0.2) * (0.4 + 0.6 * Math.sin(t * 1.4 + s.tw));
+          ctx.fillStyle = `rgba(130,200,240,${a})`;
+          ctx.fillRect(x, y, 1 + s.z * 1.5, 1 + s.z * 1.5);
         }
-        ctx.globalCompositeOperation = "source-over";
       }
 
-      function drawOperationalGrid(t, l) {
-        const active = l.init + l.scan + l.core + l.awake;
-        if (active < 0.02) return;
-        const discipline = 1 - l.core * 0.42;
-
+      function drawBridgeCircuits(t, amount) {
+        if (amount < 0.02) return;
         ctx.save();
-        ctx.globalAlpha = (0.12 + active * 0.14) * discipline;
-        ctx.strokeStyle = `rgba(90,190,255,${(0.08 + active * 0.18) * discipline})`;
+        ctx.globalAlpha = amount;
+        const spacing = Math.max(26, Math.min(width, height) * 0.05);
+        const drift = (t * 34) % spacing;
+        ctx.strokeStyle = "rgba(78,160,198,0.16)";
         ctx.lineWidth = 1;
-
-        const spacing = Math.max(24, Math.min(width, height) * 0.045);
-        const drift = (t * 16) % spacing;
         for (let x = -spacing; x < width + spacing; x += spacing) {
           ctx.beginPath();
           ctx.moveTo(x + drift, 0);
@@ -269,597 +213,266 @@
         }
         for (let y = -spacing; y < height + spacing; y += spacing) {
           ctx.beginPath();
-          ctx.moveTo(0, y + drift * 0.55);
-          ctx.lineTo(width, y + drift * 0.55);
+          ctx.moveTo(0, y + drift * 0.4);
+          ctx.lineTo(width, y + drift * 0.4);
           ctx.stroke();
         }
 
-        for (const f of fragments) {
-          const ph = Math.sin(t * (1.2 + f.phase) + f.phase * 4);
-          if (ph < 0.2) continue;
-          const x = width * (0.1 + f.x * 0.8);
-          const y = height * (0.1 + f.y * 0.8);
-          const w = width * f.w;
-          const h = height * f.h;
-          ctx.fillStyle = `rgba(115,225,255,${(0.06 + active * 0.14) * ph * discipline})`;
-          ctx.fillRect(x, y, w, h);
+        ctx.strokeStyle = "rgba(90,186,220,0.28)";
+        for (const tr of traces) {
+          const x = (tr.x * width + t * tr.s * 70) % (width + 120) - 60;
+          const y = height * tr.y + Math.sin(t + tr.o) * 20;
+          ctx.beginPath();
+          ctx.moveTo(x, y);
+          ctx.lineTo(x + width * tr.len * 0.2, y + Math.sin(t * 2 + tr.o) * 10);
+          ctx.stroke();
         }
         ctx.restore();
       }
 
-      function drawShuttersAndPanels(t, l) {
-        const p = l.ignite + l.init + l.scan + l.core + l.awake;
-        if (p < 0.02) return;
-
-        const aperture = smooth(1.1, 3.4, t) * (1 - smooth(8.9, 10.8, t));
-        const close = smooth(8.4, 10.3, t);
-        const topY = lerp(height * 0.03, height * 0.22, aperture) - close * height * 0.08;
-        const botY = lerp(height * 0.97, height * 0.78, aperture) + close * height * 0.08;
-        ctx.fillStyle = `rgba(2,8,22,${0.62 + p * 0.2})`;
-        ctx.fillRect(0, 0, width, topY);
-        ctx.fillRect(0, botY, width, height - botY);
-
-        for (const panel of panels) {
-          const flow = 0.5 + 0.5 * Math.sin(t * (1.7 + panel.seed * 3.4) + panel.seed * 9);
-          const online = clamp01(l.init * 0.6 + l.scan * 0.9 + l.awake * 1.1 - panel.seed * 0.35);
-          const x = width * (panel.side < 0 ? 0.03 : 0.97 - panel.w) + panel.side * Math.sin(t * 0.62 + panel.seed * 7) * width * 0.01;
-          const y = height * panel.y;
-          const w = width * panel.w * (0.75 + flow * 0.35);
-          const h = height * panel.h;
-          ctx.fillStyle = `rgba(${70 + l.core * 90}, ${150 + l.scan * 70}, 255, ${(0.06 + online * 0.24) * flow})`;
-          ctx.fillRect(x, y, w, h);
-          ctx.strokeStyle = `rgba(160,236,255,${0.06 + online * 0.26})`;
-          ctx.strokeRect(x, y, w, h);
-        }
-      }
-
-      function drawPhaseTransitions(t, l) {
-        const cx = width * 0.5;
-        const cy = height * 0.52;
-        const unit = Math.min(width, height);
-        let beatStrength = 0;
-        for (const b of PHASE_BEATS) beatStrength += pulse(t, b - 0.2, b, b + 0.42);
-        beatStrength = clamp01(beatStrength);
-        if (beatStrength <= 0.01 && l.core < 0.08) return;
-
-        const convergence = pulse(t, 9.05, 9.95, 10.75);
-        const beamW = width * (0.05 + convergence * 0.12);
-        const beam = ctx.createLinearGradient(cx - beamW, 0, cx + beamW, 0);
-        beam.addColorStop(0, "rgba(0,0,0,0)");
-        beam.addColorStop(0.5, `rgba(170,230,255,${0.05 + convergence * 0.14 + beatStrength * 0.08})`);
-        beam.addColorStop(1, "rgba(0,0,0,0)");
-        ctx.fillStyle = beam;
-        ctx.fillRect(cx - beamW, height * 0.12, beamW * 2, height * 0.8);
-
-        const shock = pulse(t, 8.56, 8.86, 9.24) + pulse(t, 10.18, 10.36, 10.9) * 0.8;
-        if (shock > 0.01) {
-          ctx.globalCompositeOperation = "lighter";
-          ctx.strokeStyle = `rgba(255,96,104,${0.08 + shock * 0.45})`;
-          ctx.lineWidth = 2 + shock * 6;
-          ctx.beginPath();
-          ctx.arc(cx, cy, unit * (0.11 + shock * 0.2), 0, Math.PI * 2);
-          ctx.stroke();
-          ctx.globalCompositeOperation = "source-over";
-        }
-
-        if (beatStrength > 0.02) {
-          ctx.fillStyle = `rgba(210,242,255,${beatStrength * 0.08})`;
-          ctx.fillRect(0, 0, width, height);
-        }
-      }
-
-      function drawCentralSystems(t, l) {
-        const cx = width * 0.5;
-        const cy = height * 0.52;
-        const unit = Math.min(width, height);
-
-        const morph = l.ignite * 0.26 + l.init * 0.58 + l.scan * 0.82 + l.core * 1.18 + l.awake * 1;
-        const outer = unit * (0.15 + l.init * 0.05 + l.core * 0.11 + l.awake * 0.07);
-        const unfold = smooth(2.2, 6.4, t);
-        const fracture = smooth(5.5, 9.6, t);
-        const reconf = smooth(8.0, 11.2, t);
-        const critical = pulse(t, 8.56, 8.86, 9.24) + pulse(t, 10.18, 10.36, 10.9) * 0.7;
-
+      function drawHexField(t, amount) {
+        if (amount < 0.02) return;
         ctx.save();
-        ctx.translate(cx, cy);
-        ctx.rotate(Math.sin(t * 0.22) * 0.08);
-
-        const shadow = ctx.createRadialGradient(0, 0, 0, 0, 0, outer * (8.8 + l.core * 1.8));
-        shadow.addColorStop(0, `rgba(8,13,19,${0.6 + l.core * 0.2})`);
-        shadow.addColorStop(0.3, `rgba(6,10,14,${0.52 + morph * 0.16})`);
-        shadow.addColorStop(1, "rgba(0,0,0,0)");
-        ctx.fillStyle = shadow;
-        ctx.beginPath();
-        ctx.arc(0, 0, outer * (8.8 + l.core * 1.8), 0, Math.PI * 2);
-        ctx.fill();
-
-        // evolving dark mass layers with shifting facets (replaces simple circular reactor feel)
-        const layers = 7;
-        for (let layer = 0; layer < layers; layer++) {
-          const nodesCount = 7 + ((layer * 3) % 5);
-          const base = outer * (0.55 + layer * 0.22);
-          const spin = t * (0.16 + layer * 0.07) * (layer % 2 ? -1 : 1);
-          const fold = (Math.sin(t * (1.1 + layer * 0.24) + layer * 1.3) * 0.5 + 0.5) * (0.12 + unfold * 0.22);
-          const split = fracture * ((layer % 3 === 0 ? 1 : 0.62) * (0.2 + Math.sin(t * 0.6 + layer) * 0.08));
+        ctx.globalAlpha = amount * 0.9;
+        ctx.strokeStyle = "rgba(96,186,206,0.24)";
+        for (const h of hexes) {
+          const x = width * h.x;
+          const y = height * h.y;
+          const r = h.r * (0.9 + Math.sin(t * 0.8 + h.p) * 0.16);
           ctx.beginPath();
-          for (let i = 0; i <= nodesCount; i++) {
-            const a = spin + (i / nodesCount) * Math.PI * 2;
-            const jitter = Math.sin(t * (2.1 + layer * 0.18) + i * 1.2 + layer * 2.4) * base * (0.07 + fold);
-            const spike = (i % 2 ? 1 : -1) * base * split;
-            const stretch = 1 + Math.sin(t * 0.9 + layer * 0.8) * 0.12 + reconf * 0.18;
-            const x = Math.cos(a) * (base + jitter + spike) * stretch;
-            const y = Math.sin(a) * (base * 0.74 + jitter * 0.6 - spike * 0.45);
-            if (i === 0) ctx.moveTo(x, y);
-            else ctx.lineTo(x, y);
+          for (let i = 0; i <= 6; i++) {
+            const a = (i / 6) * Math.PI * 2 + Math.PI / 6;
+            const px = x + Math.cos(a) * r;
+            const py = y + Math.sin(a) * r;
+            if (i === 0) ctx.moveTo(px, py);
+            else ctx.lineTo(px, py);
           }
-          ctx.closePath();
-          ctx.fillStyle = `rgba(${10 + layer * 5},${14 + layer * 7},${20 + layer * 9},${0.2 + morph * 0.06})`;
-          ctx.strokeStyle = `rgba(${56 + layer * 10},${88 + l.scan * 36},${114 + l.core * 56},${0.05 + morph * 0.18})`;
-          ctx.lineWidth = Math.max(1, unit * (0.001 + layer * 0.00022));
-          ctx.fill();
           ctx.stroke();
         }
+        ctx.restore();
+      }
 
-        // opening seams, folding rails, and lock traces emitted from the mass
-        const tendrilCount = 14;
-        for (let i = 0; i < tendrilCount; i++) {
-          const a = (i / tendrilCount) * Math.PI * 2 + t * 0.12;
-          const startR = outer * (0.9 + (i % 4) * 0.18);
-          const extension = outer * (1.3 + unfold * 1.2 + fracture * 1.4 + (i % 3) * 0.24);
-          const elbow = outer * (0.95 + Math.sin(t * 1.6 + i * 0.9) * 0.25);
-          const sx = Math.cos(a) * startR;
-          const sy = Math.sin(a) * startR * 0.82;
-          const mx = Math.cos(a + Math.sin(t * 1.2 + i) * 0.28) * elbow;
-          const my = Math.sin(a + Math.cos(t * 1.2 + i) * 0.2) * elbow * 0.86;
-          const ex = Math.cos(a) * extension;
-          const ey = Math.sin(a) * extension * (0.8 + Math.sin(t * 0.8 + i) * 0.12);
-
-          const active = clamp01(morph * 1.08 - i * 0.03);
-          if (active < 0.02) continue;
-          ctx.strokeStyle = `rgba(${58 + active * 64 + critical * 120},${98 + active * 74 - critical * 38},${126 + active * 92 - critical * 52},${0.05 + active * 0.22})`;
-          ctx.lineWidth = Math.max(0.9, unit * (0.0009 + (i % 4) * 0.0002));
-          ctx.beginPath();
-          ctx.moveTo(sx, sy);
-          ctx.quadraticCurveTo(mx, my, ex, ey);
-          ctx.stroke();
-
-          const packet = (t * (1.4 + (i % 4) * 0.2) + i * 0.1) % 1;
-          const px = sx * (1 - packet) + ex * packet + Math.sin(packet * Math.PI) * (mx - (sx + ex) * 0.5);
-          const py = sy * (1 - packet) + ey * packet + Math.sin(packet * Math.PI) * (my - (sy + ey) * 0.5);
-          ctx.fillStyle = `rgba(120,206,255,${0.04 + active * 0.38})`;
-          ctx.beginPath();
-          ctx.arc(px, py, 1 + active * 1.6, 0, Math.PI * 2);
-          ctx.fill();
-
-          // panel-like emitted shards that align/reconfigure around tips
-          if (active > 0.35 && i % 2 === 0) {
-            const shardW = unit * (0.018 + (i % 3) * 0.004);
-            const shardH = unit * 0.006;
-            const rot = a + Math.sin(t * 1.7 + i) * 0.5;
-            ctx.save();
-            ctx.translate(ex, ey);
-            ctx.rotate(rot);
-            ctx.fillStyle = `rgba(10,18,28,${0.24 + active * 0.28})`;
-            ctx.strokeStyle = `rgba(92,162,214,${0.07 + active * 0.22})`;
-            ctx.lineWidth = 1;
-            ctx.fillRect(-shardW * 0.5, -shardH * 0.5, shardW, shardH);
-            ctx.strokeRect(-shardW * 0.5, -shardH * 0.5, shardW, shardH);
-            ctx.restore();
-          }
-        }
-
-        // orbital activation arcs around emitted structures
-        for (let i = 0; i < 6; i++) {
-          const sweep = clamp01(unfold + fracture * 0.8 - i * 0.11);
-          if (sweep < 0.05) continue;
-          const rr = outer * (1.8 + i * 0.34);
-          const span = Math.PI * (0.2 + sweep * 0.38);
-          const base = t * (0.35 + i * 0.1) * (i % 2 ? -1 : 1);
-          ctx.strokeStyle = `rgba(${84 + critical * 110},${146 + sweep * 56 - critical * 46},${196 + sweep * 48},${0.05 + sweep * 0.15})`;
-          ctx.lineWidth = Math.max(1, unit * 0.0012);
-          for (let seg = 0; seg < 3; seg++) {
-            const a0 = base + seg * (Math.PI * 0.66) + Math.sin(t * 0.9 + seg + i) * 0.18;
-            ctx.beginPath();
-            ctx.arc(0, 0, rr, a0, a0 + span);
-            ctx.stroke();
-          }
-        }
-
-        // node cloud still exists but as controlled activation debris around dark core
+      function drawRetinaScene(t, amount) {
+        if (amount < 0.02) return;
+        const cx = width * 0.52;
+        const cy = height * 0.5;
+        const r = Math.min(width, height) * 0.085;
+        ctx.save();
         ctx.globalCompositeOperation = "lighter";
-        for (const n of nodes) {
-          const a = n.a + t * n.speed * (0.18 + l.scan * 0.75 + l.awake * 0.5);
-          const rr = outer * (1.05 + n.ring * 1.2 + Math.sin(t * 1.1 + n.seed * 5) * 0.07);
-          const nx = Math.cos(a) * rr;
-          const ny = Math.sin(a * (1.02 + n.seed * 0.08)) * rr * (0.78 + Math.sin(t * 0.7 + n.seed * 4) * 0.1);
-          const online = clamp01(l.init * 0.5 + l.scan + l.core * 1.3 + l.awake * 1.5 - n.seed * 0.42);
-          ctx.fillStyle = `rgba(${102 + l.awake * 66}, ${168 + l.scan * 40}, ${228 + l.core * 20}, ${(0.05 + online * 0.32) * (0.16 + n.seed * 0.5)})`;
-          ctx.beginPath();
-          ctx.arc(nx, ny, 1 + unit * 0.0018 + n.seed * 1.2, 0, Math.PI * 2);
-          ctx.fill();
+        ctx.globalAlpha = amount;
 
-          if (n.seed > 0.72 && l.scan > 0.15) {
-            ctx.strokeStyle = `rgba(90,172,226,${0.04 + l.scan * 0.15 + l.awake * 0.1})`;
-            ctx.lineWidth = Math.max(0.8, unit * 0.00085);
-            ctx.beginPath();
-            ctx.moveTo(nx * 0.4, ny * 0.4);
-            ctx.lineTo(nx, ny);
-            ctx.stroke();
-          }
-        }
-        ctx.globalCompositeOperation = "source-over";
-
-        // scanning arcs and framing geometry pushed outward from the reconfiguring mass
-        const frameOpen = smooth(3.3, 7.2, t);
         for (let i = 0; i < 4; i++) {
-          const side = i % 2 ? 1 : -1;
-          const top = i < 2 ? -1 : 1;
-          const drift = Math.sin(t * 0.7 + i) * outer * 0.08;
-          const fx = side * outer * (2.55 + frameOpen * 1.25) + drift;
-          const fy = top * outer * (1.46 + frameOpen * 0.68) - drift * 0.5;
-          const fw = outer * (0.72 + frameOpen * 0.54);
-          const fh = outer * 0.11;
-          ctx.save();
-          ctx.translate(fx, fy);
-          ctx.rotate(top * side * 0.22 + Math.sin(t * 1.2 + i) * 0.1);
-          ctx.fillStyle = `rgba(8,16,26,${0.2 + frameOpen * 0.16})`;
-          ctx.strokeStyle = `rgba(82,154,204,${0.05 + frameOpen * 0.18})`;
-          ctx.lineWidth = 1;
-          ctx.fillRect(-fw * 0.5, -fh * 0.5, fw, fh);
-          ctx.strokeRect(-fw * 0.5, -fh * 0.5, fw, fh);
-          ctx.restore();
+          const rr = r * (0.75 + i * 0.28 + Math.sin(t * (1.2 + i * 0.2)) * 0.03);
+          ctx.strokeStyle = `rgba(${90 + i * 24},${176 + i * 12},${220 + i * 6},${0.2 + i * 0.07})`;
+          ctx.lineWidth = 1.2 + i * 0.4;
+          ctx.setLineDash([18 + i * 7, 12 + i * 4]);
+          ctx.beginPath();
+          ctx.arc(cx, cy, rr, t * 0.4 + i, t * 0.4 + i + Math.PI * (1.2 + i * 0.12));
+          ctx.stroke();
         }
+        ctx.setLineDash([]);
 
-        // central intelligence node remains dark, with controlled cyan accents only
-        const coreR = unit * (0.024 + l.ignite * 0.03 + l.core * 0.05 + l.awake * 0.036);
-        const nodeGlow = ctx.createRadialGradient(0, 0, 0, 0, 0, coreR * 7);
-        nodeGlow.addColorStop(0, `rgba(30,44,58,${0.68 + l.awake * 0.12})`);
-        nodeGlow.addColorStop(0.32, `rgba(${52 + critical * 130},${92 + l.scan * 55 - critical * 26},${128 + l.core * 90 - critical * 46},${0.18 + l.core * 0.24})`);
-        nodeGlow.addColorStop(1, "rgba(0,0,0,0)");
-        ctx.fillStyle = nodeGlow;
+        const pupil = ctx.createRadialGradient(cx, cy, 0, cx, cy, r * 1.8);
+        pupil.addColorStop(0, "rgba(145,255,235,0.65)");
+        pupil.addColorStop(0.32, "rgba(42,160,176,0.24)");
+        pupil.addColorStop(1, "rgba(0,0,0,0)");
+        ctx.fillStyle = pupil;
         ctx.beginPath();
-        ctx.arc(0, 0, coreR * 7, 0, Math.PI * 2);
+        ctx.arc(cx, cy, r * 1.8, 0, Math.PI * 2);
         ctx.fill();
 
-        const facetCount = 12;
-        for (let i = 0; i < facetCount; i++) {
-          const a = t * 1.1 + (i / facetCount) * Math.PI * 2;
-          const f = 0.35 + 0.65 * Math.sin(t * 2.3 + i * 0.9);
-          const r0 = coreR * (0.2 + (i % 3) * 0.15);
-          const r1 = coreR * (0.8 + f * 1.2 + reconf * 0.8);
-          ctx.strokeStyle = `rgba(${70 + critical * 160}, ${122 + l.scan * 40 - critical * 42}, ${158 + l.core * 80 - critical * 62}, ${0.06 + l.core * 0.24})`;
-          ctx.lineWidth = Math.max(1, unit * 0.0011);
-          ctx.beginPath();
-          ctx.moveTo(Math.cos(a) * r0, Math.sin(a) * r0);
-          ctx.lineTo(Math.cos(a) * r1, Math.sin(a) * r1);
-          ctx.stroke();
-        }
-
-        ctx.strokeStyle = `rgba(124,198,240,${0.14 + l.core * 0.34})`;
-        ctx.lineWidth = Math.max(1.2, unit * 0.0019);
+        const sweep = ((t * 0.62) % 1) * Math.PI * 2;
+        ctx.strokeStyle = "rgba(176,255,246,0.46)";
+        ctx.lineWidth = 2;
         ctx.beginPath();
-        ctx.arc(0, 0, coreR * (2.2 + 0.4 * Math.sin(t * 2.1)), 0, Math.PI * 2);
+        ctx.arc(cx, cy, r * 1.12, sweep, sweep + Math.PI * 0.4);
         ctx.stroke();
 
-        const awakeBeat = 0.5 + 0.5 * Math.sin(t * 2.8 + Math.sin(t * 0.4));
-        if (l.awake > 0.1) {
-          ctx.strokeStyle = `rgba(${106 + critical * 120},${182 + l.awake * 26 - critical * 45},${236 - critical * 72},${0.08 + l.awake * 0.16 + awakeBeat * 0.08})`;
-          ctx.lineWidth = 1 + l.awake * 1.1;
-          ctx.beginPath();
-          ctx.arc(0, 0, coreR * (4.7 + awakeBeat * 0.5), 0, Math.PI * 2);
-          ctx.stroke();
-        }
+        ctx.strokeStyle = "rgba(255,82,92,0.35)";
+        ctx.beginPath();
+        ctx.arc(cx, cy, r * 0.28, 0, Math.PI * 2);
+        ctx.stroke();
 
+        ctx.globalCompositeOperation = "source-over";
         ctx.restore();
       }
 
-      function drawLoadingLayer(t, l) {
-        const loadingActive = smooth(2.0, 3.1, t) * (1 - smooth(8.55, 9.85, t));
-        if (loadingActive < 0.01) return;
-
-        const cx = width * 0.5;
-        const cy = height * 0.19;
-        const unit = Math.min(width, height);
-        const panelW = Math.min(width * 0.52, 620);
-        const panelH = Math.max(70, height * 0.14);
-        const x = cx - panelW / 2;
-        const y = cy - panelH / 2;
+      function drawLoadingScene(t, amount) {
+        if (amount < 0.02) return;
+        const x = width * 0.18;
+        const y = height * 0.64;
+        const w = width * 0.64;
+        const h = Math.max(14, height * 0.02);
+        const pct = clamp01((t - 5.45) / (7.9 - 5.45));
 
         ctx.save();
-        ctx.globalAlpha = loadingActive;
-        ctx.fillStyle = `rgba(5,15,38,${0.3 + l.init * 0.22 + l.scan * 0.16})`;
-        ctx.fillRect(x, y, panelW, panelH);
-        ctx.strokeStyle = `rgba(110,198,255,${0.14 + l.scan * 0.3})`;
-        ctx.lineWidth = 1;
-        ctx.strokeRect(x, y, panelW, panelH);
-
-        // corner reticle hints
-        ctx.strokeStyle = `rgba(186,234,255,${0.18 + l.scan * 0.24})`;
-        ctx.lineWidth = 1.3;
-        const c = 16;
-        const corner = (px, py, sx, sy) => {
-          ctx.beginPath();
-          ctx.moveTo(px, py + sy * c);
-          ctx.lineTo(px, py);
-          ctx.lineTo(px + sx * c, py);
-          ctx.stroke();
-        };
-        corner(x, y, 1, 1);
-        corner(x + panelW, y, -1, 1);
-        corner(x, y + panelH, 1, -1);
-        corner(x + panelW, y + panelH, -1, -1);
-
-        // LOADING label and subtask
-        ctx.fillStyle = `rgba(217,247,255,${0.9})`;
-        ctx.font = `${Math.max(16, unit * 0.03)}px Inter, Segoe UI, sans-serif`;
-        ctx.textAlign = "center";
-        ctx.letterSpacing = "2px";
-        ctx.fillText("LOADING", cx, y + panelH * 0.44);
-
-        const taskIndex = Math.floor((t * 1.65) % LOADING_SUBTASKS.length);
-        ctx.fillStyle = `rgba(140,208,255,${0.65})`;
-        ctx.font = `${Math.max(9, unit * 0.012)}px Inter, Segoe UI, sans-serif`;
-        ctx.fillText(LOADING_SUBTASKS[taskIndex], cx, y + panelH * 0.74);
-
-        // segmented arcs and rotating ticks
-        ctx.translate(cx, y + panelH * 0.42);
-        for (let j = 0; j < 2; j++) {
-          const rr = unit * (0.062 + j * 0.016);
-          const spin = t * (j ? -0.9 : 1.2);
-          for (let i = 0; i < 12; i++) {
-            const a0 = spin + (i / 12) * Math.PI * 2;
-            const a1 = a0 + Math.PI * 0.09;
-            ctx.strokeStyle = `rgba(126,214,255,${0.08 + ((i + j) % 3 === 0 ? 0.23 : 0.12)})`;
-            ctx.lineWidth = 1;
-            ctx.beginPath();
-            ctx.arc(0, 0, rr, a0, a1);
-            ctx.stroke();
-          }
-        }
-
-        for (let i = 0; i < 18; i++) {
-          const a = t * 1.7 + (i / 18) * Math.PI * 2;
-          const r0 = unit * 0.034;
-          const r1 = unit * 0.042 + (i % 3 === 0 ? unit * 0.007 : 0);
-          ctx.strokeStyle = `rgba(202,244,255,${0.1 + (i % 4 === 0 ? 0.26 : 0.12)})`;
-          ctx.beginPath();
-          ctx.moveTo(Math.cos(a) * r0, Math.sin(a) * r0);
-          ctx.lineTo(Math.cos(a) * r1, Math.sin(a) * r1);
-          ctx.stroke();
-        }
-
-        // orbiting markers, pulse dots, and scan dashes
-        for (let i = 0; i < 6; i++) {
-          const a = -t * 1.45 + (i / 6) * Math.PI * 2;
-          const rr = unit * 0.054 + Math.sin(t * 1.8 + i) * unit * 0.004;
-          const xDot = Math.cos(a) * rr;
-          const yDot = Math.sin(a) * rr;
-          ctx.fillStyle = `rgba(168,236,255,${0.24 + 0.35 * (0.5 + 0.5 * Math.sin(t * 3 + i))})`;
-          ctx.beginPath();
-          ctx.arc(xDot, yDot, 1.8, 0, Math.PI * 2);
-          ctx.fill();
-        }
-
-        ctx.restore();
-
-        // rails, calibration bars, waveform fragment and dashes
-        const progress = clamp01((t - 2.25) / 6.2);
-        const railY = y + panelH - 12;
-        ctx.strokeStyle = `rgba(90,182,255,${0.26})`;
-        ctx.strokeRect(x + 14, railY, panelW - 28, 6);
-        ctx.fillStyle = `rgba(148,224,255,${0.45})`;
-        ctx.fillRect(x + 15, railY + 1, (panelW - 30) * progress, 4);
-
-        for (let i = 0; i < 10; i++) {
-          const barH = 4 + Math.sin(t * 4 + i * 0.7) * 3 + l.scan * 8;
-          const bx = x + 18 + i * 8;
-          ctx.fillStyle = `rgba(122,208,255,${0.14 + i * 0.015})`;
-          ctx.fillRect(bx, y + 12 + (10 - barH), 2, barH);
-        }
-
-        ctx.strokeStyle = `rgba(120,202,255,${0.3})`;
-        ctx.lineWidth = 1;
-        ctx.beginPath();
-        for (let i = 0; i <= 46; i++) {
-          const k = i / 46;
-          const wx = x + panelW - 170 + k * 150;
-          const wy = y + 19 + Math.sin(k * 20 + t * 4.1) * 3 + Math.sin(k * 48 - t * 2.6) * 1.2;
-          if (i === 0) ctx.moveTo(wx, wy);
-          else ctx.lineTo(wx, wy);
-        }
-        ctx.stroke();
-
-        for (let i = 0; i < 9; i++) {
-          const dx = x + 36 + i * (panelW - 72) / 8 + Math.sin(t * 2.2 + i) * 4;
-          const dy = y + panelH * 0.57;
-          ctx.fillStyle = `rgba(162,228,255,${0.12 + 0.22 * (0.5 + 0.5 * Math.sin(t * 6 + i))})`;
-          ctx.fillRect(dx, dy, 10, 1.6);
-        }
-      }
-
-      function drawDiagnostics(t, l) {
-        const active = l.init + l.scan + l.core + l.awake;
-        if (active < 0.02) return;
-
-        // progress rails and moving bars
-        for (let i = 0; i < 2; i++) {
-          const y = height * (0.2 + i * 0.06);
-          const x = width * 0.1;
-          const w = width * 0.28;
-          const p = clamp01((t - (2.8 + i * 0.45)) / (2.6 + i * 0.8));
-          ctx.strokeStyle = `rgba(92,182,255,${0.12 + active * 0.24})`;
-          ctx.lineWidth = 1;
-          ctx.strokeRect(x, y, w, 8);
-          ctx.fillStyle = `rgba(${90 + l.core * 100}, ${200 + l.scan * 45}, 255, ${0.18 + active * 0.42})`;
-          ctx.fillRect(x + 1, y + 1, (w - 2) * p, 6);
-        }
-
-        // waveform strips
-        for (let i = 0; i < 3; i++) {
-          const y = height * (0.68 + i * 0.04);
-          const x0 = width * 0.1;
-          const w = width * 0.34;
-          ctx.strokeStyle = `rgba(95,198,255,${0.12 + l.scan * 0.3 + l.awake * 0.2})`;
-          ctx.beginPath();
-          for (let x = 0; x <= w; x += 6) {
-            const k = x / w;
-            const yy = y + Math.sin(k * 18 + t * (3 + i) + i) * (4 + l.scan * 4) + Math.sin(k * 42 - t * 2.4) * 1.5;
-            if (x === 0) ctx.moveTo(x0 + x, yy);
-            else ctx.lineTo(x0 + x, yy);
-          }
-          ctx.stroke();
-        }
-
-        // scanning windows
-        const sweep = clamp01(l.ignite * 0.6 + l.init + l.scan * 1.2 + l.awake * 0.6);
-        const sw = width * 0.8;
-        const sx = width * 0.1;
-        const sy = height * (0.25 + ((t * 0.26) % 0.46));
-        const lg = ctx.createLinearGradient(sx, sy, sx + sw, sy);
-        lg.addColorStop(0, "rgba(0,0,0,0)");
-        lg.addColorStop(0.18, `rgba(120,210,255,${0.06 + sweep * 0.12})`);
-        lg.addColorStop(0.5, `rgba(232,250,255,${0.11 + sweep * 0.25})`);
-        lg.addColorStop(0.82, `rgba(120,210,255,${0.06 + sweep * 0.12})`);
-        lg.addColorStop(1, "rgba(0,0,0,0)");
-        ctx.fillStyle = lg;
-        ctx.fillRect(sx, sy - 2, sw, 4 + l.scan * 2);
-
-        // right-side subsystem online stack
-        for (let i = 0; i < 6; i++) {
-          const online = clamp01((t - (5.2 + i * 0.48)) / 1.05);
-          const x = width * 0.74;
-          const y = height * (0.22 + i * 0.062);
-          const w = width * 0.16;
-          ctx.strokeStyle = `rgba(105,194,255,${0.09 + online * 0.28})`;
-          ctx.strokeRect(x, y, w, 10);
-          ctx.fillStyle = `rgba(${110 + l.awake * 80}, ${190 + l.scan * 30}, 255, ${0.06 + online * 0.3})`;
-          ctx.fillRect(x + 1, y + 1, (w - 2) * online, 8);
-          if (online > 0.98) {
-            ctx.fillStyle = `rgba(170,248,255,${0.34 + l.awake * 0.2})`;
-            ctx.fillRect(x + w + 8, y + 2, 6, 6);
-          }
-        }
-      }
-
-      function drawFrame(t, l) {
-        const p = l.init + l.scan + l.core + l.awake;
-        if (p < 0.02) return;
-
-        const shrink = l.awake * 0.05;
-        const w = width * (0.82 - shrink);
-        const h = height * (0.68 - shrink);
-        const x = (width - w) / 2;
-        const y = height * 0.52 - h / 2;
-        ctx.strokeStyle = `rgba(88,182,255,${0.1 + p * 0.16})`;
-        ctx.lineWidth = 1.4;
+        ctx.globalAlpha = amount;
+        ctx.strokeStyle = "rgba(90,160,192,0.38)";
         ctx.strokeRect(x, y, w, h);
 
-        const c = 22 + l.core * 26 + l.awake * 18;
-        ctx.strokeStyle = `rgba(${96 + l.core * 120},${176 - l.core * 50},255,${0.2 + p * 0.3})`;
-        ctx.lineWidth = 2;
-        const drawCorner = (px, py, sx, sy) => {
-          ctx.beginPath();
-          ctx.moveTo(px, py + sy * c);
-          ctx.lineTo(px, py);
-          ctx.lineTo(px + sx * c, py);
-          ctx.stroke();
-        };
-        drawCorner(x, y, 1, 1);
-        drawCorner(x + w, y, -1, 1);
-        drawCorner(x, y + h, 1, -1);
-        drawCorner(x + w, y + h, -1, -1);
+        const fill = ctx.createLinearGradient(x, y, x + w, y);
+        fill.addColorStop(0, "rgba(80,214,220,0.66)");
+        fill.addColorStop(1, "rgba(90,140,255,0.3)");
+        ctx.fillStyle = fill;
+        ctx.fillRect(x, y, w * pct, h);
 
-        const reticle = pulse(t, 9.6, 10.36, 11.7);
-        if (reticle > 0.01) {
-          const cx = width * 0.5;
-          const cy = height * 0.52;
-          const rr = Math.min(width, height) * (0.1 + reticle * 0.27);
-          ctx.globalCompositeOperation = "lighter";
-          ctx.strokeStyle = `rgba(255,78,92,${0.12 + reticle * 0.48})`;
-          ctx.lineWidth = 1.7 + reticle * 3;
+        for (let i = 0; i < 18; i++) {
+          const segX = x + (i / 18) * w;
+          ctx.fillStyle = `rgba(160,240,255,${i / 18 < pct ? 0.25 : 0.08})`;
+          ctx.fillRect(segX, y - 6, 2, h + 12);
+        }
+
+        const arcR = Math.min(width, height) * 0.12;
+        const cx = width * 0.78;
+        const cy = height * 0.36;
+        ctx.strokeStyle = "rgba(98,192,214,0.3)";
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.arc(cx, cy, arcR, -Math.PI * 0.75, -Math.PI * 0.75 + Math.PI * 1.5 * pct);
+        ctx.stroke();
+
+        ctx.fillStyle = "rgba(214,245,255,0.9)";
+        ctx.font = `${Math.max(14, Math.floor(height * 0.018))}px Inter, sans-serif`;
+        ctx.fillText(`${Math.floor(pct * 100)}%`, x + w + 18, y + h * 0.8);
+
+        ctx.restore();
+      }
+
+      function drawCommandScene(t, amount) {
+        if (amount < 0.02) return;
+        const cx = width * 0.42;
+        const cy = height * 0.46;
+        const base = Math.min(width, height) * 0.13;
+
+        ctx.save();
+        ctx.globalAlpha = amount;
+        const glow = ctx.createRadialGradient(cx, cy, 0, cx, cy, base * 2.8);
+        glow.addColorStop(0, "rgba(84,214,230,0.28)");
+        glow.addColorStop(0.45, "rgba(16,68,84,0.18)");
+        glow.addColorStop(1, "rgba(0,0,0,0)");
+        ctx.fillStyle = glow;
+        ctx.beginPath();
+        ctx.arc(cx, cy, base * 2.8, 0, Math.PI * 2);
+        ctx.fill();
+
+        for (let i = 0; i < 5; i++) {
+          const rr = base * (0.52 + i * 0.25);
+          ctx.strokeStyle = `rgba(${70 + i * 20},${150 + i * 16},${200 + i * 8},${0.18 + i * 0.06})`;
+          ctx.lineWidth = 1.2;
           ctx.beginPath();
           ctx.arc(cx, cy, rr, 0, Math.PI * 2);
           ctx.stroke();
-          ctx.globalCompositeOperation = "source-over";
-        }
-      }
-
-      function drawGlobalAwareness(t, l) {
-        const presence = l.global + l.collapse * 0.8;
-        if (presence < 0.02) return;
-
-        const cx = width * 0.5;
-        const cy = height * 0.52;
-        const unit = Math.min(width, height);
-        const radius = unit * (0.17 + l.global * 0.11 - l.collapse * 0.08);
-
-        ctx.save();
-        ctx.translate(cx, cy);
-        ctx.globalCompositeOperation = "lighter";
-
-        ctx.strokeStyle = `rgba(128,228,255,${0.1 + presence * 0.3})`;
-        ctx.lineWidth = 1.2;
-        for (let i = 0; i < 6; i++) {
-          const lat = -0.75 + i * 0.3;
-          const ry = radius * Math.cos(lat);
-          const y = radius * Math.sin(lat) * 0.5;
-          ctx.beginPath();
-          ctx.ellipse(0, y, Math.max(6, ry), Math.max(2, ry * 0.24), 0, 0, Math.PI * 2);
-          ctx.stroke();
         }
 
-        for (let i = 0; i < 8; i++) {
-          const a = t * 0.2 + (i / 8) * Math.PI;
-          ctx.beginPath();
-          ctx.ellipse(0, 0, radius * Math.cos(a), radius * 0.54, a, -Math.PI * 0.38, Math.PI * 0.38);
-          ctx.stroke();
+        for (const n of nodes) {
+          const a = n.a + t * n.s * 0.35;
+          const rr = base * (1.1 + n.r * 1.5);
+          const x = cx + Math.cos(a) * rr;
+          const y = cy + Math.sin(a) * rr * 0.74;
+          ctx.fillStyle = "rgba(140,236,246,0.28)";
+          ctx.fillRect(x, y, 2, 2);
+          if (n.r > 0.72) {
+            ctx.strokeStyle = "rgba(100,188,216,0.16)";
+            ctx.beginPath();
+            ctx.moveTo(cx, cy);
+            ctx.lineTo(x, y);
+            ctx.stroke();
+          }
         }
-
-        for (let i = 0; i < 18; i++) {
-          const a = t * 0.42 + i * 0.34;
-          const x = Math.cos(a) * radius * (0.4 + (i % 5) * 0.12);
-          const y = Math.sin(a * 1.3) * radius * 0.34;
-          const red = i % 7 === 0 ? 1 : 0;
-          ctx.fillStyle = red
-            ? `rgba(255,86,96,${0.14 + l.global * 0.55})`
-            : `rgba(150,244,255,${0.14 + presence * 0.26})`;
-          ctx.beginPath();
-          ctx.arc(x, y, red ? 3 : 2, 0, Math.PI * 2);
-          ctx.fill();
-        }
-
-        for (let i = 0; i < 10; i++) {
-          const a0 = t * 0.36 + i * 0.61;
-          const a1 = a0 + 0.85 + Math.sin(t * 0.8 + i) * 0.26;
-          const x0 = Math.cos(a0) * radius * 0.88;
-          const y0 = Math.sin(a0 * 1.2) * radius * 0.45;
-          const x1 = Math.cos(a1) * radius * 0.92;
-          const y1 = Math.sin(a1 * 1.2) * radius * 0.45;
-          ctx.strokeStyle = `rgba(106,224,255,${0.06 + presence * 0.25})`;
-          ctx.beginPath();
-          ctx.moveTo(x0, y0);
-          ctx.lineTo(x1, y1);
-          ctx.stroke();
-        }
-
-        ctx.globalCompositeOperation = "source-over";
         ctx.restore();
       }
 
-      function drawVignette(l) {
-        const g = ctx.createRadialGradient(width * 0.5, height * 0.5, width * 0.2, width * 0.5, height * 0.5, width * 0.84);
-        g.addColorStop(0, "rgba(0,0,0,0)");
-        g.addColorStop(1, `rgba(0,0,0,${0.56 + l.core * 0.2 + l.awake * 0.22})`);
-        ctx.fillStyle = g;
-        ctx.fillRect(0, 0, width, height);
+      function drawGlobalScene(t, amount) {
+        if (amount < 0.02) return;
+        const cx = width * 0.65;
+        const cy = height * 0.44;
+        const r = Math.min(width, height) * 0.18;
+
+        ctx.save();
+        ctx.globalAlpha = amount;
+
+        ctx.strokeStyle = "rgba(98,196,224,0.4)";
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.arc(cx, cy, r, 0, Math.PI * 2);
+        ctx.stroke();
+
+        for (let i = -2; i <= 2; i++) {
+          const ry = r * (0.3 + Math.abs(i) * 0.18);
+          ctx.beginPath();
+          ctx.ellipse(cx, cy, r, ry, 0, 0, Math.PI * 2);
+          ctx.strokeStyle = "rgba(90,176,206,0.18)";
+          ctx.stroke();
+        }
+
+        for (let i = 0; i < 6; i++) {
+          ctx.beginPath();
+          const rot = t * 0.14 + i * (Math.PI / 6);
+          ctx.ellipse(cx, cy, r, r * 0.45, rot, 0, Math.PI * 2);
+          ctx.strokeStyle = "rgba(114,214,228,0.12)";
+          ctx.stroke();
+        }
+
+        for (let i = 0; i < 26; i++) {
+          const a = (i / 26) * Math.PI * 2 + t * 0.16;
+          const px = cx + Math.cos(a) * r * 0.88;
+          const py = cy + Math.sin(a * 1.6) * r * 0.42;
+          ctx.fillStyle = "rgba(166,248,255,0.48)";
+          ctx.fillRect(px, py, 2, 2);
+        }
+
+        ctx.restore();
       }
 
-      function updateStatus(t, l) {
-        const scene = SCENES.find((s) => t >= s.start && t < s.end) || SCENES[SCENES.length - 1];
-        statusEl.textContent = scene.label;
-        statusEl.classList.toggle("alert", !!scene.alert || l.retina > 0.4 || l.global > 0.4);
-        const show = clamp01(l.signal * 0.6 + l.grid + l.boot + l.retina + l.diagnostics + l.expand + l.global + l.collapse + l.ready);
-        statusEl.style.opacity = String(0.05 + show * 0.95);
+      function drawRoutingCuts(t, amount) {
+        if (amount < 0.02) return;
+        ctx.save();
+        ctx.globalAlpha = amount;
+
+        for (let i = 0; i < 8; i++) {
+          const y = ((i * 120 + t * 140) % (height + 120)) - 60;
+          const lg = ctx.createLinearGradient(0, y, width, y);
+          lg.addColorStop(0, "rgba(0,0,0,0)");
+          lg.addColorStop(0.45, "rgba(124,228,238,0.18)");
+          lg.addColorStop(0.55, "rgba(124,228,238,0.22)");
+          lg.addColorStop(1, "rgba(0,0,0,0)");
+          ctx.fillStyle = lg;
+          ctx.fillRect(0, y - 1, width, 2);
+        }
+
+        ctx.restore();
+      }
+
+      function drawReadyScene(t, amount) {
+        if (amount < 0.02) return;
+        ctx.save();
+        ctx.globalAlpha = amount;
+
+        const border = 24;
+        ctx.strokeStyle = "rgba(92,188,214,0.28)";
+        ctx.strokeRect(border, border, width - border * 2, height - border * 2);
+
+        const bars = 6;
+        for (let i = 0; i < bars; i++) {
+          const x = width * (0.12 + i * 0.13);
+          const h = height * (0.04 + ((Math.sin(t * 2 + i) + 1) * 0.5) * 0.08);
+          ctx.fillStyle = "rgba(112,226,236,0.25)";
+          ctx.fillRect(x, height * 0.82 - h, width * 0.08, h);
+        }
+
+        ctx.restore();
+      }
+
+      function drawStatusText(t) {
+        const active = SCENES.find((s) => t >= s.start && t <= s.end) || SCENES[SCENES.length - 1];
+        statusEl.textContent = active.label;
+        statusEl.classList.toggle("alert", !!active.alert);
+        statusEl.style.opacity = String(0.2 + phase(t, active.start, active.end, 0.24) * 0.8);
+
+        if (active.key === "loading") {
+          const idx = Math.min(LOADING_WORDS.length - 1, Math.floor(((t - active.start) / (active.end - active.start)) * LOADING_WORDS.length));
+          statusEl.textContent = `${LOADING_WORDS[idx]} // ${Math.floor(clamp01((t - active.start) / (active.end - active.start)) * 100)}%`;
+        }
       }
 
       function render(now) {
@@ -868,199 +481,114 @@
           running = false;
           cancelAnimationFrame(raf);
           startBtn.classList.remove("hidden");
+          statusEl.textContent = "SYSTEM READY";
+          statusEl.classList.remove("alert");
+          statusEl.style.opacity = "1";
           return;
         }
 
-        const l = stageLevels(t);
+        const l = sceneLevels(t);
         ctx.clearRect(0, 0, width, height);
-        drawBackground(t, l);
-        drawDormantField(t, l);
-        drawOperationalGrid(t, l);
-        drawShuttersAndPanels(t, l);
-        drawCentralSystems(t, l);
-        drawGlobalAwareness(t, l);
-        drawLoadingLayer(t, l);
-        drawDiagnostics(t, l);
-        drawFrame(t, l);
-        drawPhaseTransitions(t, l);
-        drawVignette(l);
-        updateStatus(t, l);
 
+        drawBase(t, l);
+        drawBridgeCircuits(t, l.bridgeA + l.bridgeC + l.bridgeE * 0.8);
+        drawHexField(t, l.bridgeA + l.bridgeB + l.bridgeC * 0.7);
+        drawRoutingCuts(t, l.bridgeB + l.bridgeD + l.bridgeE);
+
+        drawRetinaScene(t, l.retina + l.bridgeB * 0.2);
+        drawLoadingScene(t, l.loading);
+        drawCommandScene(t, l.command + l.bridgeD * 0.2);
+        drawGlobalScene(t, l.global + l.bridgeE * 0.25);
+        drawReadyScene(t, l.ready);
+
+        drawStatusText(t);
         raf = requestAnimationFrame(render);
       }
 
       function runAudio() {
-        const AC = window.AudioContext || window.webkitAudioContext;
-        if (!AC) return;
-
-        const audio = new AC();
+        const audio = new (window.AudioContext || window.webkitAudioContext)();
         const master = audio.createGain();
-        master.gain.value = 0.26;
+        master.gain.value = 0.18;
         master.connect(audio.destination);
-
-        const now = audio.currentTime;
-        const end = now + DURATION + 0.24;
 
         const hum = audio.createOscillator();
         hum.type = "sine";
-        hum.frequency.setValueAtTime(29, now);
-        hum.frequency.linearRampToValueAtTime(40, now + 3.2);
-        hum.frequency.linearRampToValueAtTime(56, now + 8.1);
-        hum.frequency.linearRampToValueAtTime(67, now + 11.5);
-        const humG = audio.createGain();
-        humG.gain.setValueAtTime(0.0001, now);
-        humG.gain.exponentialRampToValueAtTime(0.44, now + 1.55);
-        humG.gain.linearRampToValueAtTime(0.3, end);
-        hum.connect(humG).connect(master);
+        hum.frequency.setValueAtTime(46, audio.currentTime);
+        hum.frequency.linearRampToValueAtTime(62, audio.currentTime + 12);
+        const humGain = audio.createGain();
+        humGain.gain.setValueAtTime(0.0001, audio.currentTime);
+        humGain.gain.exponentialRampToValueAtTime(0.33, audio.currentTime + 1.2);
+        humGain.gain.linearRampToValueAtTime(0.21, audio.currentTime + DURATION);
+        hum.connect(humGain).connect(master);
 
-        const sub = audio.createOscillator();
-        sub.type = "sine";
-        sub.frequency.setValueAtTime(24, now);
-        sub.frequency.linearRampToValueAtTime(31, now + 8.8);
-        sub.frequency.linearRampToValueAtTime(34, now + 11.2);
-        const subG = audio.createGain();
-        subG.gain.setValueAtTime(0.0001, now);
-        subG.gain.exponentialRampToValueAtTime(0.4, now + 2.4);
-        subG.gain.linearRampToValueAtTime(0.33, end);
-        sub.connect(subG).connect(master);
+        const sweep = audio.createOscillator();
+        sweep.type = "triangle";
+        sweep.frequency.setValueAtTime(180, audio.currentTime + 2.9);
+        sweep.frequency.exponentialRampToValueAtTime(340, audio.currentTime + 4.8);
+        const sweepGain = audio.createGain();
+        sweepGain.gain.setValueAtTime(0.0001, audio.currentTime + 2.7);
+        sweepGain.gain.exponentialRampToValueAtTime(0.18, audio.currentTime + 3.2);
+        sweepGain.gain.exponentialRampToValueAtTime(0.0001, audio.currentTime + 5.2);
+        sweep.connect(sweepGain).connect(master);
 
-        const bus = audio.createOscillator();
-        bus.type = "triangle";
-        bus.frequency.setValueAtTime(78, now + 0.25);
-        bus.frequency.exponentialRampToValueAtTime(196, now + 6.1);
-        bus.frequency.exponentialRampToValueAtTime(282, now + 9.8);
-        const busG = audio.createGain();
-        busG.gain.setValueAtTime(0.0001, now + 0.15);
-        busG.gain.exponentialRampToValueAtTime(0.17, now + 3.6);
-        busG.gain.linearRampToValueAtTime(0.14, end);
-        bus.connect(busG).connect(master);
+        const clickBuffer = audio.createBuffer(1, audio.sampleRate * 0.02, audio.sampleRate);
+        const clickData = clickBuffer.getChannelData(0);
+        for (let i = 0; i < clickData.length; i++) clickData[i] = (Math.random() * 2 - 1) * Math.exp(-i / 150);
 
-        const tickBuffer = audio.createBuffer(1, Math.floor(audio.sampleRate * 0.045), audio.sampleRate);
-        const td = tickBuffer.getChannelData(0);
-        for (let i = 0; i < td.length; i++) td[i] = (Math.random() * 2 - 1) * Math.exp(-i / 160);
-
-        function tick(time, vol = 0.06, hz = 1200, q = 6) {
+        const clickTimes = [1.9, 2.4, 3.1, 4.8, 5.6, 6.2, 7.1, 8.0, 8.8, 10.1, 12.3, 14.7, 16.1];
+        clickTimes.forEach((ct) => {
           const src = audio.createBufferSource();
-          src.buffer = tickBuffer;
-          const bp = audio.createBiquadFilter();
-          bp.type = "bandpass";
-          bp.frequency.value = hz;
-          bp.Q.value = q;
+          src.buffer = clickBuffer;
           const g = audio.createGain();
-          g.gain.setValueAtTime(vol, time);
-          g.gain.exponentialRampToValueAtTime(0.0001, time + 0.08);
-          src.connect(bp).connect(g).connect(master);
-          src.start(time);
-        }
+          g.gain.value = 0.07;
+          src.connect(g).connect(master);
+          src.start(audio.currentTime + ct);
+        });
 
-        tick(now + 1.35, 0.1, 950);
-        for (let i = 0; i < 38; i++) {
-          const tt = now + 3.7 + i * 0.18 + Math.random() * 0.04;
-          tick(tt, 0.02 + (i / 38) * 0.03, 860 + (i % 6) * 160, 7);
-        }
+        const bloom = audio.createOscillator();
+        bloom.type = "sawtooth";
+        bloom.frequency.setValueAtTime(120, audio.currentTime + 11.6);
+        bloom.frequency.exponentialRampToValueAtTime(52, audio.currentTime + 14.2);
+        const bloomGain = audio.createGain();
+        bloomGain.gain.setValueAtTime(0.0001, audio.currentTime + 11.5);
+        bloomGain.gain.exponentialRampToValueAtTime(0.24, audio.currentTime + 12.1);
+        bloomGain.gain.exponentialRampToValueAtTime(0.0001, audio.currentTime + 14.6);
+        bloom.connect(bloomGain).connect(master);
 
-        for (const beat of PHASE_BEATS) {
-          tick(now + beat, 0.095, 660, 4.2);
-        }
+        const ready = audio.createOscillator();
+        ready.type = "square";
+        ready.frequency.setValueAtTime(480, audio.currentTime + 16.4);
+        ready.frequency.linearRampToValueAtTime(620, audio.currentTime + 16.8);
+        const readyGain = audio.createGain();
+        readyGain.gain.setValueAtTime(0.0001, audio.currentTime + 16.35);
+        readyGain.gain.exponentialRampToValueAtTime(0.12, audio.currentTime + 16.5);
+        readyGain.gain.exponentialRampToValueAtTime(0.0001, audio.currentTime + 17.2);
+        ready.connect(readyGain).connect(master);
 
-        for (let i = 0; i < 16; i++) {
-          const tLoad = now + 2.2 + i * 0.31;
-          tick(tLoad, 0.024 + (i % 4) * 0.006, 1220 + (i % 5) * 115, 9);
-        }
+        hum.start();
+        sweep.start(audio.currentTime + 2.8);
+        bloom.start(audio.currentTime + 11.5);
+        ready.start(audio.currentTime + 16.35);
 
-        const growl = audio.createOscillator();
-        growl.type = "sawtooth";
-        growl.frequency.setValueAtTime(196, now + 7.1);
-        growl.frequency.exponentialRampToValueAtTime(72, now + 9.9);
-        const growlG = audio.createGain();
-        growlG.gain.setValueAtTime(0.0001, now + 7.0);
-        growlG.gain.exponentialRampToValueAtTime(0.24, now + 7.8);
-        growlG.gain.exponentialRampToValueAtTime(0.0001, now + 10.2);
-        growl.connect(growlG).connect(master);
-
-        const impact = audio.createOscillator();
-        impact.type = "triangle";
-        impact.frequency.setValueAtTime(150, now + 8.82);
-        impact.frequency.exponentialRampToValueAtTime(49, now + 9.38);
-        const impactG = audio.createGain();
-        impactG.gain.setValueAtTime(0.0001, now + 8.78);
-        impactG.gain.exponentialRampToValueAtTime(0.52, now + 8.9);
-        impactG.gain.exponentialRampToValueAtTime(0.0001, now + 9.6);
-        impact.connect(impactG).connect(master);
-
-        const chime = audio.createOscillator();
-        chime.type = "square";
-        chime.frequency.setValueAtTime(432, now + 10.15);
-        chime.frequency.exponentialRampToValueAtTime(118, now + 11.25);
-        const chimeG = audio.createGain();
-        chimeG.gain.setValueAtTime(0.0001, now + 10.1);
-        chimeG.gain.exponentialRampToValueAtTime(0.36, now + 10.34);
-        chimeG.gain.exponentialRampToValueAtTime(0.0001, now + 11.45);
-        chime.connect(chimeG).connect(master);
-
-        const authority = audio.createOscillator();
-        authority.type = "sawtooth";
-        authority.frequency.setValueAtTime(96, now + 10.32);
-        authority.frequency.linearRampToValueAtTime(82, now + 11.8);
-        const authFilter = audio.createBiquadFilter();
-        authFilter.type = "lowpass";
-        authFilter.frequency.setValueAtTime(820, now + 10.32);
-        authFilter.frequency.linearRampToValueAtTime(560, now + 11.8);
-        const authorityG = audio.createGain();
-        authorityG.gain.setValueAtTime(0.0001, now + 10.3);
-        authorityG.gain.exponentialRampToValueAtTime(0.19, now + 10.7);
-        authorityG.gain.linearRampToValueAtTime(0.12, end);
-        authority.connect(authFilter).connect(authorityG).connect(master);
-
-        const tailNoise = audio.createBuffer(1, Math.floor(audio.sampleRate * 0.7), audio.sampleRate);
-        const tailData = tailNoise.getChannelData(0);
-        for (let i = 0; i < tailData.length; i++) {
-          tailData[i] = (Math.random() * 2 - 1) * Math.exp(-i / (audio.sampleRate * 0.1));
-        }
-        const tailSrc = audio.createBufferSource();
-        tailSrc.buffer = tailNoise;
-        const lp = audio.createBiquadFilter();
-        lp.type = "lowpass";
-        lp.frequency.value = 2200;
-        const tailG = audio.createGain();
-        tailG.gain.setValueAtTime(0.0001, now + 10.24);
-        tailG.gain.exponentialRampToValueAtTime(0.11, now + 10.44);
-        tailG.gain.exponentialRampToValueAtTime(0.0001, now + 11.4);
-        tailSrc.connect(lp).connect(tailG).connect(master);
-
-        hum.start(now);
-        sub.start(now);
-        bus.start(now + 0.2);
-        growl.start(now + 7.0);
-        impact.start(now + 8.78);
-        chime.start(now + 10.1);
-        authority.start(now + 10.3);
-        tailSrc.start(now + 10.24);
-
-        hum.stop(end);
-        sub.stop(end);
-        bus.stop(end);
-        growl.stop(now + 10.2);
-        impact.stop(now + 9.64);
-        chime.stop(now + 11.5);
-        authority.stop(end);
+        hum.stop(audio.currentTime + DURATION + 0.2);
+        sweep.stop(audio.currentTime + 5.4);
+        bloom.stop(audio.currentTime + 14.7);
+        ready.stop(audio.currentTime + 17.3);
       }
 
-      function begin() {
+      function startSequence() {
         if (running) return;
         running = true;
+        statusEl.style.opacity = "0";
         startBtn.classList.add("hidden");
-        startTime = performance.now();
         runAudio();
+        startTime = performance.now();
         raf = requestAnimationFrame(render);
       }
 
+      startBtn.addEventListener("click", startSequence);
       window.addEventListener("resize", resize);
-      startBtn.addEventListener("click", begin);
       resize();
-      drawBackground(0, stageLevels(0));
-      statusEl.textContent = "DORMANT SYSTEM";
-      statusEl.style.opacity = "0.32";
     </script>
   </body>
 </html>
