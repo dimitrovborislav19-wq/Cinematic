@@ -98,6 +98,7 @@
       const SHARD_COUNT = 360;
       const PORTAL_COUNT = 90;
       const STREAM_COUNT = 180;
+      const BIO_COUNT = 110;
 
       let width = 0;
       let height = 0;
@@ -151,6 +152,17 @@
         z: Math.random(),
         p: Math.random() * Math.PI * 2,
         bend: (Math.random() * 2 - 1) * 0.8,
+        seed: Math.random(),
+      }));
+
+      const biosystems = Array.from({ length: BIO_COUNT }, () => ({
+        x: (Math.random() * 2 - 1) * 1.32,
+        y: (Math.random() * 2 - 1) * 1.0,
+        z: Math.random(),
+        phase: Math.random() * Math.PI * 2,
+        arc: Math.random() * 0.42 + 0.2,
+        lean: (Math.random() * 2 - 1) * 0.6,
+        pulse: Math.random() * 0.8 + 0.4,
         seed: Math.random(),
       }));
 
@@ -413,6 +425,89 @@
         ctx.globalCompositeOperation = "source-over";
       }
 
+      function drawImpossibleBiology(t, camX, camY, speed) {
+        const { p2, p3 } = getPhaseWeights(t);
+        const emergence = smoothstep(4.4, 7.2, t) * (1 - smoothstep(10.4, 11.5, t));
+        if (emergence <= 0.01) return;
+
+        ctx.globalCompositeOperation = "lighter";
+        for (const b of biosystems) {
+          advanceZ(b, speed * (0.72 + b.seed * 1.15), 0.016);
+          const p = project(b.x, b.y, b.z, t, camX * 1.1, camY * 1.1, 0.05 + p3 * 0.03);
+          if (p.x < -40 || p.x > width + 40 || p.y < -40 || p.y > height + 40) continue;
+
+          const major = width * (0.006 + p.depth * 0.0018) * (1 + emergence * 0.9);
+          const micro = 0.3 + 0.7 * Math.sin(t * (2.2 + b.pulse) + b.phase + b.z * 12);
+          const rot = t * (0.3 + b.seed * 0.8) + b.phase;
+          const alpha = (0.03 + emergence * 0.16 + p2 * 0.1 + p3 * 0.08) * (1.05 - b.z);
+
+          ctx.save();
+          ctx.translate(p.x, p.y);
+          ctx.rotate(rot);
+          ctx.scale(1, 0.55 + Math.sin(t * 0.8 + b.lean * 8) * 0.24);
+
+          ctx.strokeStyle = `hsla(${182 + p3 * 30 + micro * 24}, 100%, ${62 + micro * 20}%, ${alpha})`;
+          ctx.lineWidth = Math.max(1, p.depth * 0.3);
+          ctx.beginPath();
+          ctx.moveTo(-major * (1.25 + b.arc), 0);
+          ctx.bezierCurveTo(-major * 0.5, -major * (1.1 + b.lean), major * 0.42, major * (1.4 - b.lean), major * (1.1 + b.arc), 0);
+          ctx.stroke();
+
+          ctx.strokeStyle = `hsla(${210 + p3 * 22}, 100%, ${68 + micro * 16}%, ${alpha * 0.82})`;
+          ctx.beginPath();
+          ctx.moveTo(-major * (0.95 + b.arc), -major * 0.06);
+          ctx.bezierCurveTo(-major * 0.3, major * (0.8 + b.lean), major * 0.32, -major * (0.95 - b.lean), major * (0.92 + b.arc), major * 0.05);
+          ctx.stroke();
+
+          if (micro > 0.78) {
+            ctx.fillStyle = `rgba(225, 255, 255, ${alpha * 0.85})`;
+            ctx.beginPath();
+            ctx.arc(major * (0.22 + b.lean * 0.35), -major * 0.1, major * 0.1, 0, Math.PI * 2);
+            ctx.fill();
+          }
+          ctx.restore();
+        }
+        ctx.globalCompositeOperation = "source-over";
+      }
+
+      function drawUncannyMoment(t) {
+        const eventA = smoothstep(5.65, 6.2, t) * (1 - smoothstep(6.2, 6.75, t));
+        const eventB = smoothstep(9.55, 9.98, t) * (1 - smoothstep(10.02, 10.52, t));
+        const energy = Math.max(eventA, eventB);
+        if (energy <= 0.001) return;
+
+        const cx = width * (0.5 + Math.sin(t * 0.4) * 0.015);
+        const cy = height * (0.5 + Math.cos(t * 0.34) * 0.012);
+        const ring = width * (0.09 + eventA * 0.06 + eventB * 0.03);
+
+        ctx.globalCompositeOperation = "lighter";
+        ctx.save();
+        ctx.translate(cx, cy);
+        ctx.rotate(t * 0.25 + eventB * 0.8);
+
+        for (let i = 0; i < 4; i++) {
+          const phase = t * (1.1 + i * 0.37);
+          const squash = 0.2 + Math.sin(phase) * 0.7;
+          const r = ring * (1 + i * 0.22 + Math.sin(phase * 1.2) * 0.08);
+          ctx.strokeStyle = `hsla(${196 + i * 16 + eventB * 20}, 100%, ${68 + eventA * 20}%, ${0.08 + energy * 0.25})`;
+          ctx.lineWidth = Math.max(1, width * 0.001 + energy * 1.5);
+          ctx.beginPath();
+          ctx.ellipse(0, 0, r, r * squash, Math.sin(phase * 0.5) * 2.4, 0, Math.PI * 2);
+          ctx.stroke();
+        }
+        ctx.restore();
+
+        const glare = ctx.createRadialGradient(cx, cy, 0, cx, cy, ring * 2.8);
+        glare.addColorStop(0, `rgba(236, 253, 255, ${0.08 + energy * 0.55})`);
+        glare.addColorStop(0.28, `rgba(148, 238, 255, ${0.04 + energy * 0.24})`);
+        glare.addColorStop(1, "rgba(0,0,0,0)");
+        ctx.fillStyle = glare;
+        ctx.beginPath();
+        ctx.arc(cx, cy, ring * 2.8, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.globalCompositeOperation = "source-over";
+      }
+
       function drawNexus(t) {
         const pull = smoothstep(8.1, 11.45, t);
         if (pull <= 0) return;
@@ -501,6 +596,8 @@
         drawStreams(t, camX, camY, speed);
         drawShards(t, camX, camY, speed);
         drawPortals(t, camX, camY, speed);
+        drawImpossibleBiology(t, camX, camY, speed);
+        drawUncannyMoment(t);
         drawConsciousness(t);
         drawNexus(t);
         drawVignette(t);
@@ -568,13 +665,48 @@
         pullGain.gain.exponentialRampToValueAtTime(0.0001, now + 11.5);
         pull.connect(pullGain).connect(master);
 
+        const bloom = audio.createOscillator();
+        bloom.type = "sine";
+        bloom.frequency.setValueAtTime(470, now + 5.7);
+        bloom.frequency.exponentialRampToValueAtTime(138, now + 6.25);
+        bloom.frequency.exponentialRampToValueAtTime(280, now + 6.75);
+        const bloomGain = audio.createGain();
+        bloomGain.gain.setValueAtTime(0.0001, now + 5.65);
+        bloomGain.gain.exponentialRampToValueAtTime(0.18, now + 5.95);
+        bloomGain.gain.exponentialRampToValueAtTime(0.0001, now + 6.82);
+        bloom.connect(bloomGain).connect(master);
+
+        const whisperBuffer = audio.createBuffer(1, audio.sampleRate * 0.35, audio.sampleRate);
+        const whisperData = whisperBuffer.getChannelData(0);
+        for (let i = 0; i < whisperData.length; i++) {
+          const decay = Math.exp(-i / (audio.sampleRate * 0.09));
+          whisperData[i] = (Math.random() * 2 - 1) * decay;
+        }
+        for (let i = 0; i < 3; i++) {
+          const src = audio.createBufferSource();
+          src.buffer = whisperBuffer;
+          const bp = audio.createBiquadFilter();
+          bp.type = "bandpass";
+          bp.frequency.value = 520 + i * 170;
+          bp.Q.value = 8 + i * 2;
+          const g = audio.createGain();
+          const t0 = now + 9.58 + i * 0.16;
+          g.gain.setValueAtTime(0.0001, t0);
+          g.gain.exponentialRampToValueAtTime(0.08 - i * 0.016, t0 + 0.06);
+          g.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.3);
+          src.connect(bp).connect(g).connect(master);
+          src.start(t0);
+        }
+
         sub.start(now);
         chord.start(now + 0.2);
         pull.start(now + 8.6);
+        bloom.start(now + 5.65);
 
         sub.stop(now + DURATION + 0.2);
         chord.stop(now + DURATION + 0.2);
         pull.stop(now + DURATION + 0.2);
+        bloom.stop(now + DURATION + 0.2);
       }
 
       function begin() {
