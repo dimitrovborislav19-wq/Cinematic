@@ -92,11 +92,12 @@
       const statusEl = document.getElementById("status");
       const startBtn = document.getElementById("startBtn");
 
-      const DURATION = 11.4;
-      const STAR_COUNT = 1400;
-      const RAIL_COUNT = 210;
-      const NODE_COUNT = 270;
-      const RING_COUNT = 65;
+      const DURATION = 11.6;
+      const STAR_COUNT = 1500;
+      const MONOLITH_COUNT = 220;
+      const SHARD_COUNT = 360;
+      const PORTAL_COUNT = 90;
+      const STREAM_COUNT = 180;
 
       let width = 0;
       let height = 0;
@@ -112,41 +113,47 @@
         seed: Math.random(),
       }));
 
-      const rails = Array.from({ length: RAIL_COUNT }, () => ({
-        lane: (Math.random() * 2 - 1) * 1.45,
-        baseY: (Math.random() * 2 - 1) * 1.1,
-        z: Math.random(),
-        width: Math.random() * 0.03 + 0.006,
-        phase: Math.random() * Math.PI * 2,
-        seed: Math.random(),
-      }));
-
-      const nodes = Array.from({ length: NODE_COUNT }, () => ({
+      const monoliths = Array.from({ length: MONOLITH_COUNT }, () => ({
         x: (Math.random() * 2 - 1) * 1.45,
-        y: (Math.random() * 2 - 1) * 1.2,
+        y: (Math.random() * 2 - 1) * 1.18,
         z: Math.random(),
-        r: Math.random() * 0.018 + 0.005,
+        w: Math.random() * 0.03 + 0.012,
+        h: Math.random() * 0.12 + 0.05,
+        lane: Math.random() > 0.5 ? 1 : -1,
         seed: Math.random(),
-        p: Math.random() * Math.PI * 2,
       }));
 
-      const rings = Array.from({ length: RING_COUNT }, () => ({
+      const shards = Array.from({ length: SHARD_COUNT }, () => ({
+        x: (Math.random() * 2 - 1) * 1.65,
+        y: (Math.random() * 2 - 1) * 1.3,
         z: Math.random(),
-        radius: Math.random() * 0.58 + 0.24,
-        tilt: (Math.random() * 2 - 1) * 0.6,
+        r: Math.random() * 0.012 + 0.004,
+        a: Math.random() * Math.PI * 2,
         seed: Math.random(),
-        spin: (Math.random() * 2 - 1) * 0.8,
+      }));
+
+      const portals = Array.from({ length: PORTAL_COUNT }, () => ({
+        z: Math.random(),
+        radius: Math.random() * 0.42 + 0.22,
+        tilt: (Math.random() * 2 - 1) * 0.8,
+        spin: (Math.random() * 2 - 1) * 1.2,
+        seed: Math.random(),
+      }));
+
+      const streams = Array.from({ length: STREAM_COUNT }, () => ({
+        x: (Math.random() * 2 - 1) * 1.45,
+        y: (Math.random() * 2 - 1) * 1.1,
+        z: Math.random(),
+        p: Math.random() * Math.PI * 2,
+        seed: Math.random(),
       }));
 
       const clamp01 = (v) => Math.max(0, Math.min(1, v));
       const lerp = (a, b, t) => a + (b - a) * t;
+      const phase01 = (t) => clamp01(t / DURATION);
       function smoothstep(a, b, x) {
         const t = clamp01((x - a) / (b - a));
         return t * t * (3 - 2 * t);
-      }
-
-      function easeOutExpo(x) {
-        return x >= 1 ? 1 : 1 - 2 ** (-10 * x);
       }
 
       function resize() {
@@ -157,170 +164,161 @@
         canvas.style.height = `${window.innerHeight}px`;
       }
 
-      function project(x, y, z, t, camX, camY) {
-        const zz = Math.max(0.02, z);
-        const warp = 0.06 * Math.sin(t * 0.75 + zz * 9 + x * 2.4);
-        const warp2 = 0.05 * Math.cos(t * 0.67 + zz * 11 + y * 2.2);
-        const depth = 2.25 / zz;
+      function project(x, y, z, t, camX, camY, curvature = 0.06) {
+        const zz = Math.max(0.018, z);
+        const depth = 2.35 / zz;
+        const bendX = curvature * Math.sin(t * 0.56 + zz * 9.5 + y * 1.2);
+        const bendY = curvature * Math.cos(t * 0.49 + zz * 10.7 + x * 1.4);
         return {
-          x: width * (0.5 + (x + warp + camX * zz) * depth * 0.26),
-          y: height * (0.5 + (y + warp2 + camY * zz) * depth * 0.26),
+          x: width * (0.5 + (x + bendX + camX * zz) * depth * 0.255),
+          y: height * (0.5 + (y + bendY + camY * zz) * depth * 0.255),
           depth,
           z: zz,
         };
       }
 
+      function advanceZ(p, speed, dt = 0.016, reset = 1) {
+        p.z -= speed * dt;
+        if (p.z < 0.015) p.z += reset;
+      }
+
+      function getPhaseWeights(t) {
+        const p1 = 1 - smoothstep(3.4, 5.1, t);
+        const p2 = smoothstep(2.7, 5.2, t) * (1 - smoothstep(7.5, 9.4, t));
+        const p3 = smoothstep(7.1, 9.3, t);
+        return { p1, p2, p3 };
+      }
+
       function drawBackground(t) {
-        const awaken = smoothstep(0.1, 1.8, t);
-        const rush = smoothstep(2.1, 7.8, t);
-        const arrival = smoothstep(8.1, 11.2, t);
+        const { p1, p2, p3 } = getPhaseWeights(t);
+        const awaken = smoothstep(0.05, 1.25, t);
+        const sink = smoothstep(8.3, 11.4, t);
 
         const g = ctx.createRadialGradient(
-          width * (0.5 + Math.sin(t * 0.11) * 0.03),
-          height * (0.62 - arrival * 0.07),
-          width * (0.02 + awaken * 0.05),
+          width * (0.5 + Math.sin(t * 0.1) * 0.03),
+          height * (0.58 - sink * 0.08),
+          width * (0.01 + awaken * 0.03),
           width * 0.5,
-          height * 0.56,
-          width * 0.95
+          height * 0.55,
+          width * 1.0
         );
-        g.addColorStop(0, `hsla(${214 + rush * 12}, 100%, ${4 + awaken * 16 + arrival * 14}%, 0.98)`);
-        g.addColorStop(0.48, `hsla(${233 + rush * 8}, 72%, ${3 + awaken * 7}%, 0.9)`);
-        g.addColorStop(1, "rgba(0,0,0,0.99)");
+        g.addColorStop(0, `hsla(${214 + p2 * 16 + p3 * 22}, 100%, ${3 + awaken * 14 + p3 * 16}%, 0.99)`);
+        g.addColorStop(0.5, `hsla(${230 + p2 * 10}, 75%, ${3 + p2 * 7}%, 0.94)`);
+        g.addColorStop(1, "rgba(0,0,0,1)");
         ctx.fillStyle = g;
         ctx.fillRect(0, 0, width, height);
 
-        const vignette = ctx.createLinearGradient(0, 0, width, height);
-        vignette.addColorStop(0, `rgba(6, 18, 42, ${0.06 + rush * 0.08})`);
-        vignette.addColorStop(1, `rgba(0, 0, 0, ${0.32 + arrival * 0.16})`);
-        ctx.fillStyle = vignette;
+        const haze = ctx.createLinearGradient(0, 0, width, height);
+        haze.addColorStop(0, `rgba(16, 32, 62, ${0.05 + p2 * 0.1})`);
+        haze.addColorStop(1, `rgba(0, 0, 0, ${0.34 + p3 * 0.22 + p1 * 0.08})`);
+        ctx.fillStyle = haze;
         ctx.fillRect(0, 0, width, height);
       }
 
-      function advanceZ(p, speed, dt = 0.016) {
-        p.z -= speed * dt;
-        if (p.z < 0.015) p.z += 1;
-      }
-
       function drawStars(t, camX, camY, speed) {
-        const awaken = smoothstep(0, 2.2, t);
-        const rush = smoothstep(1.7, 7.5, t);
-        const flash = smoothstep(9.2, 11.2, t);
-        const dt = 0.016;
+        const { p1, p2, p3 } = getPhaseWeights(t);
+        const awaken = smoothstep(0, 1.8, t);
+        for (const s of stars) {
+          advanceZ(s, speed * (0.55 + s.seed * 0.9), 0.016);
+          const q = project(s.x, s.y, s.z, t, camX, camY, 0.04 + p3 * 0.02);
+          if (q.x < -24 || q.x > width + 24 || q.y < -24 || q.y > height + 24) continue;
 
-        for (const p of stars) {
-          advanceZ(p, speed * (0.55 + p.seed * 0.8), dt);
-          const q = project(p.x, p.y, p.z, t, camX, camY);
-          if (q.x < -20 || q.x > width + 20 || q.y < -20 || q.y > height + 20) continue;
-
-          const tw = 0.5 + 0.5 * Math.sin(t * (2 + p.seed * 5) + p.tw + p.z * 10);
-          const streak = 1 + rush * q.depth * 0.42;
-          const size = (0.35 + (1 - p.z) * 1.6) * q.depth * 0.38;
-          const hue = lerp(198, 216, p.seed);
-          const a = (0.05 + awaken * 0.38 + flash * 0.2) * (0.45 + tw * 0.75);
-
-          ctx.strokeStyle = `hsla(${hue}, 100%, ${72 + tw * 20}%, ${a})`;
-          ctx.lineWidth = Math.max(1, size * 0.9);
+          const tw = 0.5 + 0.5 * Math.sin(t * (2 + s.seed * 6) + s.tw + s.z * 10);
+          const phaseLen = 1 + p2 * q.depth * 0.38 + p3 * q.depth * 0.65;
+          const alpha = (0.03 + awaken * 0.22 + p2 * 0.22 + p3 * 0.3) * (0.35 + tw * 0.85);
+          ctx.strokeStyle = `hsla(${196 + p3 * 22}, 100%, ${70 + tw * 20}%, ${alpha})`;
+          ctx.lineWidth = Math.max(1, q.depth * 0.36);
           ctx.beginPath();
           ctx.moveTo(q.x, q.y);
-          ctx.lineTo(q.x - streak * speed * 0.9, q.y + streak * 0.4);
+          ctx.lineTo(q.x - phaseLen * speed * 1.1, q.y + phaseLen * 0.35);
           ctx.stroke();
         }
       }
 
-      function drawRails(t, camX, camY, speed) {
-        const build = smoothstep(1.2, 5.2, t);
-        const dense = smoothstep(4.5, 9.3, t);
-        const dt = 0.016;
-
+      function drawMonoliths(t, camX, camY, speed) {
+        const { p1, p2, p3 } = getPhaseWeights(t);
+        const density = 0.2 + p1 * 0.7 + p2 * 1.2 + p3 * 0.9;
         ctx.globalCompositeOperation = "lighter";
-        for (const r of rails) {
-          advanceZ(r, speed * (1.2 + r.seed), dt);
-          const wave = Math.sin(t * 1.25 + r.phase + r.z * 8) * 0.3;
-          const y = r.baseY + wave * (0.2 + dense * 0.35);
 
-          const a = project(r.lane - r.width, y, r.z, t, camX * 1.3, camY * 1.2);
-          const b = project(r.lane + r.width, y, Math.min(1, r.z + 0.07), t, camX * 1.3, camY * 1.2);
-          const c = project(r.lane, y + 0.09, Math.min(1, r.z + 0.13), t, camX * 1.2, camY * 1.2);
+        for (const m of monoliths) {
+          advanceZ(m, speed * (1 + m.seed * 1.5), 0.016);
+          const sway = Math.sin(t * 1.2 + m.seed * 8 + m.z * 9) * (0.12 + p2 * 0.2);
+          const x = m.x + m.lane * sway;
+          const y = m.y + Math.cos(t * 0.8 + m.seed * 12) * (0.04 + p3 * 0.08);
+          const a = project(x - m.w, y - m.h, m.z, t, camX * 1.4, camY * 1.25, 0.03);
+          const b = project(x + m.w, y - m.h, m.z, t, camX * 1.4, camY * 1.25, 0.03);
+          const c = project(x + m.w, y + m.h, Math.min(1, m.z + 0.1), t, camX * 1.4, camY * 1.25, 0.03);
+          const d = project(x - m.w, y + m.h, Math.min(1, m.z + 0.1), t, camX * 1.4, camY * 1.25, 0.03);
 
-          const alpha = (0.03 + build * 0.2 + dense * 0.2) * (1.1 - r.z);
-          const hue = 194 + Math.sin(r.seed * 16 + t * 0.4) * 22;
-
-          ctx.fillStyle = `hsla(${hue}, 100%, ${58 + dense * 22}%, ${alpha})`;
+          const alpha = (0.02 + density * 0.12) * (1.12 - m.z);
+          const hue = 196 + p2 * 14 + p3 * 26 + Math.sin(m.seed * 11 + t * 0.6) * 8;
+          ctx.fillStyle = `hsla(${hue}, 100%, ${50 + p2 * 14 + p3 * 18}%, ${alpha})`;
           ctx.beginPath();
           ctx.moveTo(a.x, a.y);
           ctx.lineTo(b.x, b.y);
           ctx.lineTo(c.x, c.y);
+          ctx.lineTo(d.x, d.y);
           ctx.closePath();
           ctx.fill();
 
-          if (dense > 0.35) {
-            ctx.strokeStyle = `hsla(${hue + 12}, 100%, 78%, ${alpha * 0.9})`;
+          if (p2 > 0.2 || p3 > 0.1) {
+            ctx.strokeStyle = `hsla(${hue + 16}, 100%, 82%, ${alpha * 0.9})`;
             ctx.lineWidth = Math.max(1, a.depth * 0.6);
             ctx.beginPath();
             ctx.moveTo(a.x, a.y);
-            ctx.lineTo(b.x, b.y);
+            ctx.lineTo(d.x, d.y);
             ctx.stroke();
           }
         }
         ctx.globalCompositeOperation = "source-over";
       }
 
-      function drawNodes(t, camX, camY, speed) {
-        const rise = smoothstep(0.6, 3.2, t);
-        const discover = smoothstep(2.5, 8.4, t);
-        const arrival = smoothstep(8.5, 11.2, t);
-        const dt = 0.016;
-
+      function drawShards(t, camX, camY, speed) {
+        const { p1, p2, p3 } = getPhaseWeights(t);
         ctx.globalCompositeOperation = "lighter";
-        for (const n of nodes) {
-          advanceZ(n, speed * (0.85 + n.seed * 1.2), dt);
-          n.x += Math.sin(t * 0.5 + n.p + n.seed * 7) * 0.0007;
-          n.y += Math.cos(t * 0.42 + n.p) * 0.0006;
+        for (const s of shards) {
+          advanceZ(s, speed * (0.8 + s.seed * 1.4 + p3 * 0.8), 0.016);
+          s.a += 0.02 + s.seed * 0.01;
+          const drift = p2 * 0.15 + p3 * 0.35;
+          s.x += Math.sin(s.a + t * 0.9) * 0.0009 * drift;
+          s.y += Math.cos(s.a * 1.2 + t * 0.7) * 0.0007 * drift;
 
-          if (n.x > 1.5) n.x = -1.5;
-          if (n.x < -1.5) n.x = 1.5;
-          if (n.y > 1.28) n.y = -1.28;
-          if (n.y < -1.28) n.y = 1.28;
+          const p = project(s.x, s.y, s.z, t, camX * 1.2, camY * 1.2, 0.05 + p3 * 0.03);
+          if (p.x < -32 || p.x > width + 32 || p.y < -32 || p.y > height + 32) continue;
 
-          const p = project(n.x, n.y, n.z, t, camX * 1.1, camY * 1.1);
-          if (p.x < -30 || p.x > width + 30 || p.y < -30 || p.y > height + 30) continue;
-
-          const glowR = n.r * p.depth * width * (0.008 + discover * 0.006);
-          const pulse = 0.5 + 0.5 * Math.sin(t * 4.2 + n.seed * 12 + n.z * 20);
-          const alpha = (0.04 + rise * 0.26 + arrival * 0.14) * (1.15 - n.z) * (0.55 + pulse * 0.75);
-          const hue = 188 + pulse * 38;
-
-          const g = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, glowR * 3.8);
-          g.addColorStop(0, `hsla(${hue}, 100%, 82%, ${alpha})`);
-          g.addColorStop(0.3, `hsla(${hue + 18}, 100%, 66%, ${alpha * 0.66})`);
+          const rr = s.r * p.depth * width * (0.007 + p2 * 0.006 + p3 * 0.01);
+          const pulse = 0.5 + 0.5 * Math.sin(t * 4 + s.seed * 14 + s.z * 20);
+          const alpha = (0.02 + p2 * 0.2 + p3 * 0.26) * (1.1 - s.z) * (0.5 + pulse * 0.8);
+          const g = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, rr * 3.6);
+          g.addColorStop(0, `hsla(${194 + p3 * 34}, 100%, 84%, ${alpha})`);
+          g.addColorStop(0.4, `hsla(${210 + p2 * 18 + p3 * 24}, 100%, 66%, ${alpha * 0.65})`);
           g.addColorStop(1, "rgba(0,0,0,0)");
           ctx.fillStyle = g;
           ctx.beginPath();
-          ctx.arc(p.x, p.y, glowR * 3.8, 0, Math.PI * 2);
+          ctx.arc(p.x, p.y, rr * 3.6, 0, Math.PI * 2);
           ctx.fill();
         }
         ctx.globalCompositeOperation = "source-over";
       }
 
-      function drawRings(t, camX, camY, speed) {
-        const discover = smoothstep(3.2, 8.8, t);
-        const corridor = smoothstep(6.2, 11.2, t);
-        const dt = 0.016;
+      function drawPortals(t, camX, camY, speed) {
+        const { p2, p3 } = getPhaseWeights(t);
+        const active = p2 + p3;
+        if (active <= 0.02) return;
 
         ctx.globalCompositeOperation = "lighter";
-        for (const r of rings) {
-          advanceZ(r, speed * (1.45 + r.seed), dt);
-          const p = project(0, 0, r.z, t, camX * 0.9, camY * 0.9);
-          const radius = (r.radius + Math.sin(t * 0.8 + r.seed * 10) * 0.03) * p.depth * width * 0.055;
-          const alpha = (0.02 + discover * 0.2 + corridor * 0.2) * (1.08 - r.z);
-
+        for (const r of portals) {
+          advanceZ(r, speed * (1.3 + r.seed + p3 * 0.8), 0.016);
+          const p = project(0, 0, r.z, t, camX * 0.86, camY * 0.86, 0.02);
+          const radius = (r.radius + Math.sin(t * 0.9 + r.seed * 9) * 0.03) * p.depth * width * 0.052;
+          const alpha = (0.02 + active * 0.28) * (1.08 - r.z);
           ctx.save();
           ctx.translate(p.x, p.y);
-          ctx.rotate(r.spin * t * 0.27 + r.tilt);
-          ctx.scale(1, 0.42 + Math.sin(t * 0.6 + r.seed * 5) * 0.08);
-          ctx.strokeStyle = `hsla(${200 + r.seed * 26}, 100%, ${56 + corridor * 28}%, ${alpha})`;
-          ctx.lineWidth = Math.max(1, p.depth * 0.45);
-          ctx.setLineDash([18 + r.seed * 28, 12 + (1 - r.seed) * 24]);
+          ctx.rotate(r.spin * t * 0.26 + r.tilt);
+          ctx.scale(1, 0.36 + p3 * 0.25 + Math.sin(t * 0.6 + r.seed * 5) * 0.08);
+          ctx.strokeStyle = `hsla(${202 + p3 * 30}, 100%, ${58 + p3 * 24}%, ${alpha})`;
+          ctx.lineWidth = Math.max(1, p.depth * 0.56);
+          ctx.setLineDash([16 + r.seed * 20, 10 + (1 - r.seed) * 20]);
           ctx.beginPath();
           ctx.arc(0, 0, radius, 0, Math.PI * 2);
           ctx.stroke();
@@ -330,89 +328,100 @@
         ctx.globalCompositeOperation = "source-over";
       }
 
-      function drawConsciousness(t, speed) {
-        const born = smoothstep(0.05, 1.2, t);
-        const rush = smoothstep(2.1, 8.6, t);
-        const arrival = smoothstep(8.7, 11.2, t);
-
-        const cx = width * 0.5 + Math.sin(t * 0.9) * width * 0.02;
-        const cy = height * (0.54 + Math.cos(t * 0.7) * 0.02);
-        const radius = width * (0.004 + born * 0.003 + arrival * 0.001);
-
-        const glow = ctx.createRadialGradient(cx, cy, 0, cx, cy, radius * (14 + rush * 8));
-        glow.addColorStop(0, `rgba(220, 252, 255, ${0.85 + arrival * 0.15})`);
-        glow.addColorStop(0.3, `rgba(132, 231, 255, ${0.55 + rush * 0.35})`);
-        glow.addColorStop(1, "rgba(0,0,0,0)");
-
+      function drawStreams(t, camX, camY, speed) {
+        const { p2, p3 } = getPhaseWeights(t);
+        if (p2 + p3 < 0.08) return;
         ctx.globalCompositeOperation = "lighter";
-        ctx.fillStyle = glow;
-        ctx.beginPath();
-        ctx.arc(cx, cy, radius * (13 + rush * 7), 0, Math.PI * 2);
-        ctx.fill();
+        for (const s of streams) {
+          advanceZ(s, speed * (1.1 + s.seed * 1.6 + p3 * 0.8), 0.016);
+          const wobble = Math.sin(t * 1.4 + s.p + s.z * 6) * (0.18 + p3 * 0.28);
+          const p = project(s.x + wobble, s.y, s.z, t, camX * 1.5, camY * 1.4, 0.06);
+          const len = (8 + p.depth * 1.8) * (0.4 + p3 * 0.9);
+          const a = (0.04 + p2 * 0.11 + p3 * 0.16) * (1.05 - s.z);
+          ctx.strokeStyle = `hsla(${188 + p3 * 34}, 100%, 76%, ${a})`;
+          ctx.lineWidth = Math.max(1, p.depth * 0.34);
+          ctx.beginPath();
+          ctx.moveTo(p.x, p.y);
+          ctx.lineTo(p.x + len * 0.5, p.y - len * 2.6);
+          ctx.stroke();
+        }
+        ctx.globalCompositeOperation = "source-over";
+      }
 
-        ctx.fillStyle = `rgba(230, 254, 255, ${0.9})`;
-        ctx.beginPath();
-        ctx.arc(cx, cy, radius * (1.05 + Math.sin(t * 8) * 0.12), 0, Math.PI * 2);
-        ctx.fill();
+      function drawConsciousness(t) {
+        const born = smoothstep(0.02, 1.1, t);
+        const fadeSelf = 1 - smoothstep(3.6, 5.4, t);
+        const survive = smoothstep(8.2, 10.6, t) * 0.7;
+        const life = born * (fadeSelf + survive);
+        if (life <= 0.01) return;
 
-        ctx.strokeStyle = `rgba(146, 230, 255, ${0.16 + rush * 0.4})`;
-        ctx.lineWidth = Math.max(1, radius * 0.22 * speed);
+        const cx = width * 0.5 + Math.sin(t * 0.8) * width * 0.012;
+        const cy = height * 0.54 + Math.cos(t * 0.6) * height * 0.01;
+        const r = width * (0.0028 + life * 0.0036);
+        const g = ctx.createRadialGradient(cx, cy, 0, cx, cy, r * 16);
+        g.addColorStop(0, `rgba(224,252,255,${0.82 * life})`);
+        g.addColorStop(0.4, `rgba(132,232,255,${0.52 * life})`);
+        g.addColorStop(1, "rgba(0,0,0,0)");
+        ctx.globalCompositeOperation = "lighter";
+        ctx.fillStyle = g;
         ctx.beginPath();
-        ctx.moveTo(cx - radius * (30 + rush * 80), cy + radius * 0.8);
-        ctx.lineTo(cx - radius * 1.2, cy + radius * 0.1);
-        ctx.stroke();
+        ctx.arc(cx, cy, r * 16, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = `rgba(235,255,255,${0.9 * life})`;
+        ctx.beginPath();
+        ctx.arc(cx, cy, r, 0, Math.PI * 2);
+        ctx.fill();
         ctx.globalCompositeOperation = "source-over";
       }
 
       function drawNexus(t) {
-        const pull = smoothstep(8.4, 11.1, t);
+        const pull = smoothstep(8.1, 11.45, t);
         if (pull <= 0) return;
-
         const cx = width * 0.5;
         const cy = height * 0.5;
-        const r = width * (0.03 + pull * 0.06);
+        const r = width * (0.025 + pull * 0.09);
 
         ctx.globalCompositeOperation = "lighter";
-        const g = ctx.createRadialGradient(cx, cy, 0, cx, cy, r * 7);
-        g.addColorStop(0, `rgba(217,251,255,${0.36 + pull * 0.58})`);
-        g.addColorStop(0.34, `rgba(119,228,255,${0.25 + pull * 0.36})`);
-        g.addColorStop(1, "rgba(0,0,0,0)");
-        ctx.fillStyle = g;
+        const corona = ctx.createRadialGradient(cx, cy, 0, cx, cy, r * 8);
+        corona.addColorStop(0, `rgba(224,252,255,${0.34 + pull * 0.58})`);
+        corona.addColorStop(0.38, `rgba(113,226,255,${0.22 + pull * 0.42})`);
+        corona.addColorStop(1, "rgba(0,0,0,0)");
+        ctx.fillStyle = corona;
         ctx.beginPath();
-        ctx.arc(cx, cy, r * 7, 0, Math.PI * 2);
+        ctx.arc(cx, cy, r * 8, 0, Math.PI * 2);
         ctx.fill();
 
-        for (let i = 0; i < 6; i++) {
+        for (let i = 0; i < 8; i++) {
           ctx.save();
           ctx.translate(cx, cy);
-          ctx.rotate(t * 0.4 + i * (Math.PI / 3));
-          ctx.strokeStyle = `rgba(150, 236, 255, ${0.18 + pull * 0.34})`;
-          ctx.lineWidth = Math.max(1.2, r * 0.03);
+          ctx.rotate(t * 0.65 + i * (Math.PI / 4));
+          ctx.strokeStyle = `rgba(148, 237, 255, ${0.16 + pull * 0.42})`;
+          ctx.lineWidth = Math.max(1.3, r * 0.028);
           ctx.beginPath();
-          ctx.moveTo(r * (1.6 + i * 0.2), 0);
-          ctx.lineTo(r * (4.1 + i * 0.3), 0);
+          ctx.moveTo(r * (1.4 + i * 0.18), 0);
+          ctx.lineTo(r * (4.6 + i * 0.45), 0);
           ctx.stroke();
           ctx.restore();
         }
 
-        ctx.fillStyle = `rgba(233,255,255,${0.56 + pull * 0.44})`;
+        ctx.fillStyle = `rgba(238,255,255,${0.52 + pull * 0.48})`;
         ctx.beginPath();
-        ctx.arc(cx, cy, r * 0.46, 0, Math.PI * 2);
+        ctx.arc(cx, cy, r * 0.48, 0, Math.PI * 2);
         ctx.fill();
         ctx.globalCompositeOperation = "source-over";
       }
 
       function drawVignette(t) {
-        const arrival = smoothstep(8.6, 11.3, t);
-        const edge = ctx.createRadialGradient(width * 0.5, height * 0.5, width * 0.28, width * 0.5, height * 0.5, width * 0.78);
+        const sink = smoothstep(7.8, 11.5, t);
+        const edge = ctx.createRadialGradient(width * 0.5, height * 0.5, width * 0.25, width * 0.5, height * 0.5, width * 0.8);
         edge.addColorStop(0, "rgba(0,0,0,0)");
-        edge.addColorStop(1, `rgba(0, 0, 0, ${0.52 + arrival * 0.28})`);
+        edge.addColorStop(1, `rgba(0, 0, 0, ${0.5 + sink * 0.34})`);
         ctx.fillStyle = edge;
         ctx.fillRect(0, 0, width, height);
       }
 
       function updateStatus(t) {
-        const show = smoothstep(9.7, 11.2, t);
+        const show = smoothstep(9.8, 11.4, t);
         statusEl.textContent = "NEXUS ARRIVAL";
         statusEl.classList.toggle("show", show > 0.08);
         statusEl.style.opacity = String(show);
@@ -427,22 +436,24 @@
           return;
         }
 
-        const awaken = smoothstep(0.25, 1.5, t);
-        const accelerate = smoothstep(1.2, 6.8, t);
-        const maxRush = smoothstep(5.5, 9.2, t);
-        const settle = 1 - smoothstep(9.5, 11.2, t);
-        const speed = 0.2 + awaken * 0.5 + accelerate * 1.8 + maxRush * 2.4 * settle;
+        const p = phase01(t);
+        const awaken = smoothstep(0.1, 1.2, t);
+        const accelerate = smoothstep(1.0, 4.4, t);
+        const dive = smoothstep(4.0, 8.5, t);
+        const gravity = smoothstep(8.0, 11.5, t);
+        const speed = 0.14 + awaken * 0.32 + accelerate * 1.5 + dive * 2.0 + gravity * 2.8 * (1 - smoothstep(11.0, 11.6, t));
 
-        const camX = Math.sin(t * 0.42) * 0.06 + Math.sin(t * 1.15) * 0.02;
-        const camY = Math.cos(t * 0.31) * 0.05 + Math.sin(t * 0.8 + 1.2) * 0.02;
+        const camX = Math.sin(t * 0.4 + p * 2.4) * (0.05 + dive * 0.06) + Math.sin(t * 1.1) * 0.02;
+        const camY = Math.cos(t * 0.33 + p * 1.8) * (0.045 + gravity * 0.04) + Math.sin(t * 0.9 + 1.3) * 0.02;
 
         ctx.clearRect(0, 0, width, height);
         drawBackground(t);
         drawStars(t, camX, camY, speed);
-        drawRails(t, camX, camY, speed);
-        drawNodes(t, camX, camY, speed);
-        drawRings(t, camX, camY, speed);
-        drawConsciousness(t, speed);
+        drawMonoliths(t, camX, camY, speed);
+        drawStreams(t, camX, camY, speed);
+        drawShards(t, camX, camY, speed);
+        drawPortals(t, camX, camY, speed);
+        drawConsciousness(t);
         drawNexus(t);
         drawVignette(t);
         updateStatus(t);
@@ -453,31 +464,34 @@
       function runAudio() {
         const audio = new (window.AudioContext || window.webkitAudioContext)();
         const master = audio.createGain();
-        master.gain.value = 0.2;
+        master.gain.value = 0.22;
         master.connect(audio.destination);
 
         const now = audio.currentTime;
 
-        const low = audio.createOscillator();
-        low.type = "sine";
-        low.frequency.setValueAtTime(34, now);
-        low.frequency.linearRampToValueAtTime(42, now + 3);
-        low.frequency.linearRampToValueAtTime(65, now + 9.2);
-        const lowGain = audio.createGain();
-        lowGain.gain.setValueAtTime(0.0001, now);
-        lowGain.gain.exponentialRampToValueAtTime(0.36, now + 1.3);
-        lowGain.gain.linearRampToValueAtTime(0.22, now + DURATION);
-        low.connect(lowGain).connect(master);
+        const sub = audio.createOscillator();
+        sub.type = "sine";
+        sub.frequency.setValueAtTime(30, now);
+        sub.frequency.linearRampToValueAtTime(44, now + 3.8);
+        sub.frequency.linearRampToValueAtTime(62, now + 8.8);
+        sub.frequency.linearRampToValueAtTime(74, now + 11.2);
+        const subGain = audio.createGain();
+        subGain.gain.setValueAtTime(0.0001, now);
+        subGain.gain.exponentialRampToValueAtTime(0.32, now + 1.2);
+        subGain.gain.linearRampToValueAtTime(0.26, now + 9.2);
+        subGain.gain.linearRampToValueAtTime(0.2, now + DURATION);
+        sub.connect(subGain).connect(master);
 
-        const choir = audio.createOscillator();
-        choir.type = "triangle";
-        choir.frequency.setValueAtTime(96, now + 0.3);
-        choir.frequency.exponentialRampToValueAtTime(240, now + 8.9);
-        const choirGain = audio.createGain();
-        choirGain.gain.setValueAtTime(0.0001, now + 0.3);
-        choirGain.gain.exponentialRampToValueAtTime(0.22, now + 4.8);
-        choirGain.gain.linearRampToValueAtTime(0.1, now + DURATION);
-        choir.connect(choirGain).connect(master);
+        const chord = audio.createOscillator();
+        chord.type = "triangle";
+        chord.frequency.setValueAtTime(90, now + 0.4);
+        chord.frequency.exponentialRampToValueAtTime(210, now + 6.5);
+        chord.frequency.exponentialRampToValueAtTime(290, now + 10.2);
+        const chordGain = audio.createGain();
+        chordGain.gain.setValueAtTime(0.0001, now + 0.2);
+        chordGain.gain.exponentialRampToValueAtTime(0.19, now + 4.4);
+        chordGain.gain.linearRampToValueAtTime(0.13, now + DURATION);
+        chord.connect(chordGain).connect(master);
 
         const noiseBuffer = audio.createBuffer(1, audio.sampleRate * 0.04, audio.sampleRate);
         const data = noiseBuffer.getChannelData(0);
@@ -485,34 +499,34 @@
           data[i] = (Math.random() * 2 - 1) * Math.exp(-i / 160);
         }
 
-        for (let i = 0; i < 34; i++) {
+        for (let i = 0; i < 40; i++) {
           const src = audio.createBufferSource();
           src.buffer = noiseBuffer;
           const g = audio.createGain();
-          const when = now + 1.1 + i * 0.27 + Math.random() * 0.15;
-          g.gain.setValueAtTime(0.04, when);
+          const when = now + 1.0 + i * 0.24 + Math.random() * 0.16;
+          g.gain.setValueAtTime(0.05, when);
           g.gain.exponentialRampToValueAtTime(0.0001, when + 0.06);
           src.connect(g).connect(master);
           src.start(when);
         }
 
-        const arrival = audio.createOscillator();
-        arrival.type = "sawtooth";
-        arrival.frequency.setValueAtTime(350, now + 9.3);
-        arrival.frequency.exponentialRampToValueAtTime(72, now + 10.7);
-        const arrivalGain = audio.createGain();
-        arrivalGain.gain.setValueAtTime(0.0001, now + 9.2);
-        arrivalGain.gain.exponentialRampToValueAtTime(0.38, now + 9.45);
-        arrivalGain.gain.exponentialRampToValueAtTime(0.0001, now + 11.25);
-        arrival.connect(arrivalGain).connect(master);
+        const pull = audio.createOscillator();
+        pull.type = "sawtooth";
+        pull.frequency.setValueAtTime(340, now + 8.7);
+        pull.frequency.exponentialRampToValueAtTime(62, now + 11.25);
+        const pullGain = audio.createGain();
+        pullGain.gain.setValueAtTime(0.0001, now + 8.6);
+        pullGain.gain.exponentialRampToValueAtTime(0.4, now + 9.1);
+        pullGain.gain.exponentialRampToValueAtTime(0.0001, now + 11.5);
+        pull.connect(pullGain).connect(master);
 
-        low.start(now);
-        choir.start(now + 0.3);
-        arrival.start(now + 9.2);
+        sub.start(now);
+        chord.start(now + 0.2);
+        pull.start(now + 8.6);
 
-        low.stop(now + DURATION + 0.2);
-        choir.stop(now + DURATION + 0.2);
-        arrival.stop(now + DURATION + 0.2);
+        sub.stop(now + DURATION + 0.2);
+        chord.stop(now + DURATION + 0.2);
+        pull.stop(now + DURATION + 0.2);
       }
 
       function begin() {
@@ -530,7 +544,7 @@
       startBtn.addEventListener("click", begin);
       resize();
       drawBackground(0);
-      drawConsciousness(0, 0.2);
+      drawConsciousness(0);
     </script>
   </body>
 </html>
