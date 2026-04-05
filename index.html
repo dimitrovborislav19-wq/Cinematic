@@ -117,9 +117,12 @@
         x: (Math.random() * 2 - 1) * 1.45,
         y: (Math.random() * 2 - 1) * 1.18,
         z: Math.random(),
-        w: Math.random() * 0.03 + 0.012,
-        h: Math.random() * 0.12 + 0.05,
+        w: Math.random() * 0.028 + 0.01,
+        h: Math.random() * 0.11 + 0.05,
         lane: Math.random() > 0.5 ? 1 : -1,
+        twist: Math.random() * Math.PI * 2,
+        pitch: (Math.random() * 2 - 1) * 1.1,
+        flux: Math.random() * 0.8 + 0.3,
         seed: Math.random(),
       }));
 
@@ -137,6 +140,8 @@
         radius: Math.random() * 0.42 + 0.22,
         tilt: (Math.random() * 2 - 1) * 0.8,
         spin: (Math.random() * 2 - 1) * 1.2,
+        fold: Math.random() * Math.PI * 2,
+        ribs: 5 + Math.floor(Math.random() * 4),
         seed: Math.random(),
       }));
 
@@ -145,6 +150,7 @@
         y: (Math.random() * 2 - 1) * 1.1,
         z: Math.random(),
         p: Math.random() * Math.PI * 2,
+        bend: (Math.random() * 2 - 1) * 0.8,
         seed: Math.random(),
       }));
 
@@ -242,17 +248,26 @@
 
         for (const m of monoliths) {
           advanceZ(m, speed * (1 + m.seed * 1.5), 0.016);
-          const sway = Math.sin(t * 1.2 + m.seed * 8 + m.z * 9) * (0.12 + p2 * 0.2);
+          const sway = Math.sin(t * (1.1 + m.flux * 0.4) + m.seed * 8 + m.z * 9) * (0.1 + p2 * 0.24);
           const x = m.x + m.lane * sway;
-          const y = m.y + Math.cos(t * 0.8 + m.seed * 12) * (0.04 + p3 * 0.08);
-          const a = project(x - m.w, y - m.h, m.z, t, camX * 1.4, camY * 1.25, 0.03);
-          const b = project(x + m.w, y - m.h, m.z, t, camX * 1.4, camY * 1.25, 0.03);
-          const c = project(x + m.w, y + m.h, Math.min(1, m.z + 0.1), t, camX * 1.4, camY * 1.25, 0.03);
-          const d = project(x - m.w, y + m.h, Math.min(1, m.z + 0.1), t, camX * 1.4, camY * 1.25, 0.03);
+          const y = m.y + Math.cos(t * 0.8 + m.seed * 12) * (0.04 + p3 * 0.09);
+          const depthLift = Math.min(1, m.z + 0.13);
+          const flex = Math.sin(t * 1.2 + m.twist + m.z * 16) * (0.05 + p3 * 0.12);
+          const shear = Math.cos(t * 0.9 + m.pitch + m.z * 12) * (0.06 + p2 * 0.08);
 
-          const alpha = (0.02 + density * 0.12) * (1.12 - m.z);
-          const hue = 196 + p2 * 14 + p3 * 26 + Math.sin(m.seed * 11 + t * 0.6) * 8;
-          ctx.fillStyle = `hsla(${hue}, 100%, ${50 + p2 * 14 + p3 * 18}%, ${alpha})`;
+          const a = project(x - m.w, y - m.h, m.z, t, camX * 1.5, camY * 1.25, 0.03);
+          const b = project(x + m.w + flex, y - m.h + shear, m.z, t, camX * 1.5, camY * 1.25, 0.03);
+          const c = project(x + m.w - flex, y + m.h, depthLift, t, camX * 1.5, camY * 1.25, 0.03);
+          const d = project(x - m.w - flex * 0.6, y + m.h - shear, depthLift, t, camX * 1.5, camY * 1.25, 0.03);
+          const core = project(x + flex * 0.3, y, Math.min(1, m.z + 0.06), t, camX * 1.5, camY * 1.25, 0.03);
+
+          const alpha = (0.02 + density * 0.11) * (1.12 - m.z);
+          const hue = 188 + p2 * 18 + p3 * 32 + Math.sin(m.seed * 11 + t * 0.6) * 10;
+          const g = ctx.createLinearGradient(a.x, a.y, c.x, c.y);
+          g.addColorStop(0, `hsla(${hue - 18}, 100%, ${38 + p2 * 8}%, ${alpha * 0.7})`);
+          g.addColorStop(0.52, `hsla(${hue + 4}, 100%, ${58 + p2 * 16 + p3 * 14}%, ${alpha})`);
+          g.addColorStop(1, `hsla(${hue + 26}, 100%, ${50 + p3 * 18}%, ${alpha * 0.72})`);
+          ctx.fillStyle = g;
           ctx.beginPath();
           ctx.moveTo(a.x, a.y);
           ctx.lineTo(b.x, b.y);
@@ -261,14 +276,12 @@
           ctx.closePath();
           ctx.fill();
 
-          if (p2 > 0.2 || p3 > 0.1) {
-            ctx.strokeStyle = `hsla(${hue + 16}, 100%, 82%, ${alpha * 0.9})`;
-            ctx.lineWidth = Math.max(1, a.depth * 0.6);
-            ctx.beginPath();
-            ctx.moveTo(a.x, a.y);
-            ctx.lineTo(d.x, d.y);
-            ctx.stroke();
-          }
+          ctx.strokeStyle = `hsla(${hue + 34}, 100%, 84%, ${alpha * (0.36 + p2 * 0.4 + p3 * 0.42)})`;
+          ctx.lineWidth = Math.max(1, a.depth * 0.52);
+          ctx.beginPath();
+          ctx.moveTo(a.x, a.y);
+          ctx.quadraticCurveTo(core.x, core.y, c.x, c.y);
+          ctx.stroke();
         }
         ctx.globalCompositeOperation = "source-over";
       }
@@ -310,17 +323,35 @@
         for (const r of portals) {
           advanceZ(r, speed * (1.3 + r.seed + p3 * 0.8), 0.016);
           const p = project(0, 0, r.z, t, camX * 0.86, camY * 0.86, 0.02);
-          const radius = (r.radius + Math.sin(t * 0.9 + r.seed * 9) * 0.03) * p.depth * width * 0.052;
+          const radius = (r.radius + Math.sin(t * 0.9 + r.seed * 9 + r.fold) * 0.03) * p.depth * width * 0.052;
           const alpha = (0.02 + active * 0.28) * (1.08 - r.z);
           ctx.save();
           ctx.translate(p.x, p.y);
-          ctx.rotate(r.spin * t * 0.26 + r.tilt);
-          ctx.scale(1, 0.36 + p3 * 0.25 + Math.sin(t * 0.6 + r.seed * 5) * 0.08);
-          ctx.strokeStyle = `hsla(${202 + p3 * 30}, 100%, ${58 + p3 * 24}%, ${alpha})`;
-          ctx.lineWidth = Math.max(1, p.depth * 0.56);
-          ctx.setLineDash([16 + r.seed * 20, 10 + (1 - r.seed) * 20]);
+          ctx.rotate(r.spin * t * 0.24 + r.tilt + Math.sin(t * 0.35 + r.fold) * 0.4);
+          ctx.scale(1, 0.32 + p3 * 0.28 + Math.sin(t * 0.6 + r.seed * 5) * 0.1);
+
+          for (let k = 0; k < r.ribs; k++) {
+            const a0 = (Math.PI * 2 * k) / r.ribs + t * (0.18 + r.seed * 0.22);
+            const wave = Math.sin(t * 1.5 + r.fold + k) * (0.18 + p3 * 0.24);
+            const rr = radius * (0.72 + Math.sin(a0 * 2.2 + wave) * 0.26 + p3 * 0.1);
+            const px = Math.cos(a0) * rr;
+            const py = Math.sin(a0) * rr;
+            const qx = Math.cos(a0 + Math.PI * 0.62) * rr * (0.5 + wave * 0.3);
+            const qy = Math.sin(a0 + Math.PI * 0.62) * rr * (0.5 - wave * 0.3);
+
+            ctx.strokeStyle = `hsla(${196 + p3 * 38 + k * 4}, 100%, ${56 + p3 * 24}%, ${alpha * 0.85})`;
+            ctx.lineWidth = Math.max(1, p.depth * (0.26 + k * 0.05));
+            ctx.beginPath();
+            ctx.moveTo(px, py);
+            ctx.quadraticCurveTo(qx, qy, -px * (0.6 + wave), -py * (0.6 - wave));
+            ctx.stroke();
+          }
+
+          ctx.strokeStyle = `hsla(${206 + p3 * 30}, 100%, ${64 + p3 * 20}%, ${alpha * 0.72})`;
+          ctx.lineWidth = Math.max(1, p.depth * 0.4);
+          ctx.setLineDash([10 + r.seed * 18, 14 + (1 - r.seed) * 24]);
           ctx.beginPath();
-          ctx.arc(0, 0, radius, 0, Math.PI * 2);
+          ctx.ellipse(0, 0, radius, radius * (0.8 + Math.sin(t + r.fold) * 0.16), 0, 0, Math.PI * 2);
           ctx.stroke();
           ctx.restore();
         }
@@ -338,11 +369,19 @@
           const p = project(s.x + wobble, s.y, s.z, t, camX * 1.5, camY * 1.4, 0.06);
           const len = (8 + p.depth * 1.8) * (0.4 + p3 * 0.9);
           const a = (0.04 + p2 * 0.11 + p3 * 0.16) * (1.05 - s.z);
-          ctx.strokeStyle = `hsla(${188 + p3 * 34}, 100%, 76%, ${a})`;
-          ctx.lineWidth = Math.max(1, p.depth * 0.34);
+          const curl = Math.sin(t * 2.1 + s.seed * 9 + s.bend * 6) * (5 + p3 * 14);
+          ctx.strokeStyle = `hsla(${178 + p3 * 46}, 100%, 78%, ${a})`;
+          ctx.lineWidth = Math.max(1, p.depth * 0.32);
           ctx.beginPath();
           ctx.moveTo(p.x, p.y);
-          ctx.lineTo(p.x + len * 0.5, p.y - len * 2.6);
+          ctx.bezierCurveTo(
+            p.x + len * (0.16 + s.bend * 0.2),
+            p.y - len * 1.4 + curl,
+            p.x - len * (0.2 + s.bend * 0.16),
+            p.y - len * 2.1 - curl,
+            p.x + len * (0.56 + s.bend * 0.26),
+            p.y - len * 2.7
+          );
           ctx.stroke();
         }
         ctx.globalCompositeOperation = "source-over";
@@ -398,10 +437,19 @@
           ctx.strokeStyle = `rgba(148, 237, 255, ${0.16 + pull * 0.42})`;
           ctx.lineWidth = Math.max(1.3, r * 0.028);
           ctx.beginPath();
-          ctx.moveTo(r * (1.4 + i * 0.18), 0);
-          ctx.lineTo(r * (4.6 + i * 0.45), 0);
+          ctx.moveTo(r * (1.25 + i * 0.14), 0);
+          ctx.quadraticCurveTo(r * (2.8 + i * 0.35), r * (0.4 + Math.sin(t * 1.6 + i) * 0.6), r * (4.6 + i * 0.42), 0);
           ctx.stroke();
           ctx.restore();
+        }
+
+        for (let i = 0; i < 5; i++) {
+          const rr = r * (0.7 + i * 0.32 + pull * 1.1);
+          ctx.strokeStyle = `rgba(123, 230, 255, ${0.05 + pull * 0.12})`;
+          ctx.lineWidth = Math.max(1, r * 0.012);
+          ctx.beginPath();
+          ctx.ellipse(cx, cy, rr, rr * (0.34 + Math.sin(t * 0.8 + i) * 0.16), t * 0.22 + i * 0.6, 0, Math.PI * 2);
+          ctx.stroke();
         }
 
         ctx.fillStyle = `rgba(238,255,255,${0.52 + pull * 0.48})`;
